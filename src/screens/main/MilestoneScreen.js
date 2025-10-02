@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet,Platform } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -98,8 +98,18 @@ const MilestoneScreen = ({ navigation }) => {
 };
 
 const localStyles = StyleSheet.create({
-  scrollPadding: {
-    paddingBottom: 90, // Match the height of the fixed navigation bar
+  // The CustomHeader component is placed here. 
+  // We apply padding/margin to push it down, especially on Android.
+  headerWrapper: {
+    // Add 20 units of top padding/margin to push the header down on Android
+    marginTop: Platform.OS === 'android' ? 20 : 0, 
+    // You might also need a little extra space on iOS to ensure visibility
+    // If 0 is not enough, try 'ios' ? 10 : 20.
+  },
+  scrollContentWithPadding: {
+    paddingBottom: 90, 
+    // Removed paddingHorizontal from styles.scrollContent in the main view
+    paddingHorizontal: 20, 
   },
 });
 

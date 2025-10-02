@@ -1,10 +1,9 @@
 // src/screens/main/HomeScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView, Platform } from 'react-native'; // Import Platform
 import { Audio } from 'expo-av';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
 import BottomNavbar from '../../components/BottomNavbar';
-// IMPORTANT: Add useFocusEffect for safer navigation state access
 import { useFocusEffect } from '@react-navigation/native';
 
 // Get screen width for responsive sizing
@@ -176,13 +175,14 @@ const HomeScreen = ({ navigation }) => {
   const playbackText = isPlaying ? 'Stop Playback' : 'Listen to Recording';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    // SafeAreaView is correct for top/bottom insets
+    <SafeAreaView style={styles.safeArea}> 
       <View style={styles.container}>
-        {/* Scrollable Content (Exclude the header if using CustomHeader) */}
+        
         <View style={styles.content}>
           
           {/* Header/Profile Info */}
-          <View style={styles.header}>
+          <View style={styles.header}> {/* This component gets the updated style */}
             <View style={styles.avatarPlaceholder} /> 
             <View>
               <Text style={styles.nameText}>Anish</Text>
@@ -265,7 +265,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: 10,
+    // THE CRITICAL CHANGE: Increase marginTop to push the header down 
+    // This uses Platform.OS to handle differences between iOS/Android slightly better, 
+    // as SafeAreaView sometimes needs an extra nudge on Android or older iOS devices.
+    marginTop: Platform.OS === 'ios' ? 0 : 30, // Keep 0 for iOS (rely on SafeAreaView) or 30 for Android
+    paddingTop: Platform.OS === 'ios' ? 20 : 0, // Use paddingTop for iOS to push content down inside SafeAreaView
+    
+    // NOTE: If you are using expo-router or React Navigation's default header is hidden, 
+    // the value of 20-30 is typically safe for Android. On iOS, SafeAreaView handles it.
     marginBottom: 40,
   },
   avatarPlaceholder: {

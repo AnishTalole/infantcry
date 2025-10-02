@@ -448,6 +448,7 @@ export const styles = StyleSheet.create({
 
   // --- Milestones Screen Styles ---
   milestoneIntroTitle: {
+    marginTop:20,
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.textDark,
