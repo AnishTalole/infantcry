@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Dimensions } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Dimensions, StyleSheet } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import BottomNavbar from '../../components/BottomNavbar';
+import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
 
 const { width } = Dimensions.get('window');
@@ -11,6 +13,15 @@ const { width } = Dimensions.get('window');
 const ProfileSetupScreen = ({ navigation }) => {
   const [selectedAvatar, setSelectedAvatar] = useState('B');
   const [selectedGender, setSelectedGender] = useState('Female');
+
+   const [currentRoute, setCurrentRoute] = useState('ProfileSetup'); 
+  
+  useFocusEffect(
+    useCallback(() => {
+      const routeName = navigation.getState().routes[navigation.getState().index].name;
+      setCurrentRoute(routeName);
+    }, [navigation])
+  );
 
   const AvatarItem = ({ id, color, isSelected }) => (
     <TouchableOpacity onPress={() => setSelectedAvatar(id)} style={styles.avatarItem}>
@@ -87,8 +98,15 @@ const ProfileSetupScreen = ({ navigation }) => {
           style={{ marginTop: 40 }}
         />
       </ScrollView>
+      <BottomNavbar navigation={navigation} currentRoute={currentRoute} />
     </SafeAreaView>
   );
 };
+
+const localStyles = StyleSheet.create({
+  scrollPadding: {
+    paddingBottom: 90, // Match the height of the fixed navigation bar
+  },
+});
 
 export default ProfileSetupScreen;

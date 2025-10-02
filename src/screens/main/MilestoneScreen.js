@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import BottomNavbar from '../../components/BottomNavbar';
+import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, SHADOW, PLACEHOLDER_ICON } from '../../theme/styles';
 
-const MilestonesScreen = ({ navigation }) => {
+const MilestoneScreen = ({ navigation }) => {
   const [selectedAge, setSelectedAge] = useState('2-4');
+
+  const [currentRoute, setCurrentRoute] = useState('Milestones'); 
+  
+  useFocusEffect(
+    useCallback(() => {
+      const routeName = navigation.getState().routes[navigation.getState().index].name;
+      setCurrentRoute(routeName);
+    }, [navigation])
+  );
 
   const AgeButton = ({ age, color }) => (
     <TouchableOpacity
@@ -81,8 +92,15 @@ const MilestonesScreen = ({ navigation }) => {
           />
         </View>
       </ScrollView>
+      <BottomNavbar navigation={navigation} currentRoute={currentRoute} />
     </SafeAreaView>
   );
 };
 
-export default MilestonesScreen;
+const localStyles = StyleSheet.create({
+  scrollPadding: {
+    paddingBottom: 90, // Match the height of the fixed navigation bar
+  },
+});
+
+export default MilestoneScreen;

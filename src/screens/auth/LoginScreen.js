@@ -39,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
 
         <PrimaryButton
           title="LOG IN"
-          onPress={() => navigation.navigate('Welcome')}
+          onPress={() => navigation.navigate('Home')}
           style={{ marginTop: 30 }}
         />
 

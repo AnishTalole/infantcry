@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import BottomNavbar from '../../components/BottomNavbar';
+import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_ICON } from '../../theme/styles';
 
 const HistoryScreen = ({ navigation }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Week');
+
+  const [currentRoute, setCurrentRoute] = useState('History'); 
+  
+  useFocusEffect(
+    useCallback(() => {
+      const routeName = navigation.getState().routes[navigation.getState().index].name;
+      setCurrentRoute(routeName);
+    }, [navigation])
+  );
   
   const HistoryItem = ({ label, time, iconColor }) => (
     <TouchableOpacity style={styles.historyItem} onPress={() => navigation.navigate('PredictionResult')}>
@@ -82,8 +93,15 @@ const HistoryScreen = ({ navigation }) => {
         </View>
 
       </ScrollView>
+      <BottomNavbar navigation={navigation} currentRoute={currentRoute} />
     </SafeAreaView>
   );
 };
+
+const localStyles = StyleSheet.create({
+  scrollPadding: {
+    paddingBottom: 90, // Match the height of the fixed navigation bar
+  },
+});
 
 export default HistoryScreen;

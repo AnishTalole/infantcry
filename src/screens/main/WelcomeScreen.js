@@ -42,7 +42,7 @@ const WelcomeScreen = ({ navigation }) => {
         <Text style={styles.welcomeSubtitle}>Your Baby Translator</Text>
         <PrimaryButton
           title="GET STARTED"
-          onPress={() => navigation.navigate('PredictionResult')}
+          onPress={() => navigation.navigate('Login')}
           style={{ width: '90%', marginTop: 40 }}
         />
       </View>

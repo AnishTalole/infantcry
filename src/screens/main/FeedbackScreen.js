@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
 import PrimaryButton from '../../components/PrimaryButton';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import BottomNavbar from '../../components/BottomNavbar';
+import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
 
 const FeedbackScreen = ({ navigation }) => {
   const [rating, setRating] = useState(0);
+  const [currentRoute, setCurrentRoute] = useState('Feedback'); 
+  
+  useFocusEffect(
+    useCallback(() => {
+      const routeName = navigation.getState().routes[navigation.getState().index].name;
+      setCurrentRoute(routeName);
+    }, [navigation])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -53,8 +63,15 @@ const FeedbackScreen = ({ navigation }) => {
 
         </View>
       </ScrollView>
+      <BottomNavbar navigation={navigation} currentRoute={currentRoute} />
     </SafeAreaView>
   );
 };
+
+const localStyles = StyleSheet.create({
+  scrollPadding: {
+    paddingBottom: 90, // Match the height of the fixed navigation bar
+  },
+});
 
 export default FeedbackScreen;
