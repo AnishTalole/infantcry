@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView, Platform } from 'react-native';
 import { Audio } from 'expo-av';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
 

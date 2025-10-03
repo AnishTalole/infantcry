@@ -1,7 +1,9 @@
 // src/components/BottomNavBar.js
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 // Import COLORS and any necessary layout utilities from your theme
 import { COLORS } from '../theme/styles'; // Assuming you define COLORS in src/theme/styles.js
 

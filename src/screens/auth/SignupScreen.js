@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native'; // ADDED: StyleSheet for local styles
 import PrimaryButton from '../../components/PrimaryButton';
+import { Ionicons } from '@expo/vector-icons';
 // Ensure COLORS is imported from styles for the Image source
 import { styles, PLACEHOLDER_AVATAR, COLORS } from '../../theme/styles'; 
 
@@ -10,6 +11,8 @@ const SignupScreen = ({ navigation }) => {
   const [babyName, setBabyName] = useState('');
   // NEW: Added babyDOB state
   const [babyDOB, setBabyDOB] = useState(''); 
+  // NEW: Added babyGender state
+  const [babyGender, setBabyGender] = useState(null); // 'Boy' or 'Girl'
   const [phoneNumber, setPhoneNumber] = useState(''); // New state for phone number
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,28 +36,33 @@ const SignupScreen = ({ navigation }) => {
     }
 
     // 3. Validate Baby DOB (Simple check for non-empty string in DD/MM/YYYY format)
-    // NOTE: In a real app, you would use a Date Picker component for better UX/validation.
     const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/; 
     if (!dobRegex.test(babyDOB)) {
         setError('Please enter Baby\'s Date of Birth in DD/MM/YYYY format.');
         return;
     }
+    
+    // 4. Validate Baby Gender
+    if (!babyGender) {
+        setError('Please select your baby\'s gender.');
+        return;
+    }
 
-    // 4. Validate Phone Number
+    // 5. Validate Phone Number
     const phoneRegex = /^\d{10}$/; 
     if (!phoneRegex.test(phoneNumber)) {
         setError('Please enter a valid 10-digit phone number.');
         return;
     }
 
-    // 5. Validate Email
+    // 6. Validate Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         setError('Please enter a valid email address.');
         return;
     }
 
-    // 6. Validate Password
+    // 7. Validate Password
     if (password.length < 6) {
         setError('Password must be at least 6 characters long.');
         return;
@@ -62,8 +70,34 @@ const SignupScreen = ({ navigation }) => {
 
     // If all validations pass, proceed
     console.log('Signup successful. Proceeding to Profile Setup.');
-    navigation.navigate('ProfileSetup');
+    // Navigating to Home, as ProfileSetup might not be fully configured yet.
+    navigation.navigate('Home'); 
   };
+  
+  // Helper Component for Gender Buttons
+  const GenderButton = ({ gender, iconName, label }) => (
+    <TouchableOpacity
+      style={[
+        localStyles.genderButton,
+        babyGender === gender && localStyles.genderButtonSelected,
+      ]}
+      onPress={() => setBabyGender(gender)}
+    >
+      <Ionicons
+        name={iconName}
+        size={24}
+        color={babyGender === gender ? COLORS.white : COLORS.textGray}
+      />
+      <Text
+        style={[
+          localStyles.genderText,
+          babyGender === gender && localStyles.genderTextSelected,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.authContainer}>
@@ -77,7 +111,7 @@ const SignupScreen = ({ navigation }) => {
         />
 
         <View style={styles.inputGroup}>
-          {/* NEW: Parent Name Input */}
+          {/* Parent Name Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Your Name (Parent)"
@@ -85,7 +119,7 @@ const SignupScreen = ({ navigation }) => {
             value={parentName}
             onChangeText={setParentName}
           />
-          {/* Existing Baby Name Input */}
+          {/* Baby Name Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Baby's Name"
@@ -93,7 +127,7 @@ const SignupScreen = ({ navigation }) => {
             value={babyName}
             onChangeText={setBabyName}
           />
-          {/* NEW: Baby DOB Input */}
+          {/* Baby DOB Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Baby's DOB (DD/MM/YYYY)"
@@ -101,11 +135,20 @@ const SignupScreen = ({ navigation }) => {
             value={babyDOB}
             onChangeText={setBabyDOB}
             keyboardType="numeric" 
-            maxLength={10} // DD/MM/YYYY is 10 characters
+            maxLength={10}
           />
+          
+          {/* NEW: Baby Gender Selection */}
+          <Text style={localStyles.genderLabel}>Baby's Gender</Text>
+          <View style={localStyles.genderRow}>
+            <GenderButton gender="Boy" iconName="male" label="Boy" />
+            <GenderButton gender="Girl" iconName="female" label="Girl" />
+            <GenderButton gender="Other" iconName="transgender" label="Other" />
+          </View>
+          
           {/* Existing Phone Number Input */}
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { marginTop: 15 }]} // Add margin to separate from gender buttons
             placeholder="Phone Number"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={phoneNumber}
@@ -153,5 +196,50 @@ const SignupScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
+// Local styles for Gender component
+const localStyles = StyleSheet.create({
+    genderLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.textDark,
+        marginBottom: 10,
+        alignSelf: 'flex-start',
+        marginLeft: 5,
+    },
+    genderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 15,
+    },
+    genderButton: {
+        flex: 1,
+        backgroundColor: COLORS.white,
+        borderRadius: 15,
+        paddingVertical: 15,
+        alignItems: 'center',
+        marginHorizontal: 5,
+        borderWidth: 1,
+        borderColor: '#EFEFEF',
+    },
+    genderButtonSelected: {
+        backgroundColor: COLORS.primaryOrange,
+        borderColor: COLORS.primaryOrange,
+        shadowColor: COLORS.primaryOrange,
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    genderText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.textGray,
+        marginTop: 5,
+    },
+    genderTextSelected: {
+        color: COLORS.white,
+    }
+});
 
 export default SignupScreen;

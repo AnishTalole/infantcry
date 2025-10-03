@@ -2,8 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
 import PrimaryButton from '../../components/PrimaryButton';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome'; // RE-ADDED: For star rating
+import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons'; // RE-ADDED: For star rating
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
