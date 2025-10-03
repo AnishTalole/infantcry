@@ -10,26 +10,29 @@ import { styles, COLORS, PLACEHOLDER_ICON } from '../../theme/styles';
 const { width } = Dimensions.get('window');
 
 // --- MOCK DATA SIMULATION ---
-// Added a unique `predictionId` for each history item.
+// Ensure all 5 categories are represented in the data for the chart calculation to work.
 const MOCK_HISTORY_DATA = [
   { id: 1, reason: "Discomfort", time: "Today, 15:30", color: COLORS.secondaryPink, confidence: 69.29, predictionId: 'pid_1', count: 5 },
   { id: 2, reason: "Hunger", time: "Today, 10:15", color: COLORS.primaryOrange, confidence: 75.12, predictionId: 'pid_2', count: 12 },
   { id: 3, reason: "Tired", time: "Yesterday, 20:00", color: COLORS.cardYellow, confidence: 88.05, predictionId: 'pid_3', count: 23 },
   { id: 4, reason: "Discomfort", time: "12 May. 13:24PM", color: COLORS.secondaryPink, confidence: 55.60, predictionId: 'pid_4', count: 15 },
-  { id: 5, reason: "Hunger", time: "11 May. 09:00AM", color: COLORS.primaryOrange, confidence: 62.40, predictionId: 'pid_5', count: 1 },
+  { id: 5, reason: "Burping", time: "11 May. 09:00AM", color: COLORS.cardGreen, confidence: 62.40, predictionId: 'pid_5', count: 1 },
+  // Adding one for Belly Pain to ensure it's included in the distribution
+  { id: 6, reason: "Belly Pain", time: "11 May. 10:00AM", color: COLORS.cardPurple, confidence: 91.00, predictionId: 'pid_6', count: 3 },
 ];
 
+// UPDATED: Now defines all 5 cry types with their respective colors
 const CRY_TYPES = {
     "Discomfort": COLORS.secondaryPink,
     "Hunger": COLORS.primaryOrange,
     "Tired": COLORS.cardYellow,
-    "Belly Pain": COLORS.cardPurple,
-    "Burping": COLORS.cardGreen,
+    "Belly Pain": COLORS.cardPurple, // Using COLORS.cardPurple for Belly Pain
+    "Burping": COLORS.cardGreen,      // Using COLORS.cardGreen for Burping
 };
 
 const HistoryScreen = ({ navigation }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Week');
-  const [historyItems, setHistoryItems] = useState(MOCK_HISTORY_DATA); // State for the list view
+  const [historyItems, setHistoryItems] = useState(MOCK_HISTORY_DATA); 
 
   const [currentRoute, setCurrentRoute] = useState('History'); 
   
@@ -40,8 +43,9 @@ const HistoryScreen = ({ navigation }) => {
     }, [navigation])
   );
   
-  // Memoized function to calculate chart data (unchanged)
+  // Memoized function to calculate chart data based on the full 5 CRY_TYPES map
   const chartData = useMemo(() => {
+    // 1. Count occurrences of each cry type present in the history
     const counts = historyItems.reduce((acc, item) => {
         acc[item.reason] = (acc[item.reason] || 0) + 1;
         return acc;
@@ -49,6 +53,7 @@ const HistoryScreen = ({ navigation }) => {
 
     const totalCount = historyItems.length;
 
+    // 2. Create the data structure, including all 5 CRY_TYPES, even if count is 0
     return Object.entries(CRY_TYPES).map(([reason, color]) => {
         const count = counts[reason] || 0;
         const percentage = totalCount > 0 ? (count / totalCount) : 0;
@@ -56,18 +61,16 @@ const HistoryScreen = ({ navigation }) => {
         return {
             label: reason,
             count: count,
-            percentage: percentage,
+            percentage: percentage, // value between 0 and 1
             iconColor: color,
         };
-    }).sort((a, b) => b.count - a.count);
+    }).sort((a, b) => b.count - a.count); // Sort to show most frequent first
   }, [historyItems]);
 
   
-  // UPDATED: HistoryItem now passes predictionId
   const HistoryItem = ({ label, time, iconColor, confidence, itemData }) => (
     <TouchableOpacity 
       style={styles.historyItem} 
-      // ACTION: Pass the predictionId for lookup on the RemedyScreen
       onPress={() => navigation.navigate('Remedy', { predictionId: itemData.predictionId, primaryLabel: label })} 
     >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -114,23 +117,25 @@ const HistoryScreen = ({ navigation }) => {
           ))}
         </Card>
 
-        {/* Charts/Graphs */}
+        {/* Charts/Graphs (Now dynamic for all 5 types) */}
         <Card style={styles.chartCard}>
           <Text style={localStyles.chartTitle}>Cry Distribution ({selectedPeriod})</Text>
           <View style={styles.barChartContainer}>
             {chartData.map((item, index) => (
-              item.count > 0 && ( 
-                <View key={index} style={styles.barWrapper}>
-                  <View style={styles.barOuter}>
-                    <View style={[styles.barInner, { 
-                        height: `${Math.max(5, item.percentage * 100)}%`,
-                        backgroundColor: item.iconColor 
-                    }]} />
-                  </View>
-                  <Text style={styles.barLabel}>{item.count}</Text>
-                  <Image source={{ uri: PLACEHOLDER_ICON(item.iconColor) }} style={styles.barIcon} />
+              // RENDER: Show all 5 bars, regardless of count, but only show count label if > 0
+              <View key={index} style={styles.barWrapper}>
+                <View style={styles.barOuter}>
+                  <View style={[styles.barInner, { 
+                      // Ensure minimum height for visual clarity, otherwise 0% height
+                      height: `${item.percentage > 0 ? Math.max(5, item.percentage * 100) : 0}%`, 
+                      backgroundColor: item.iconColor 
+                  }]} />
                 </View>
-              )
+                {/* Only show the count label if the count is greater than 0 */}
+                <Text style={styles.barLabel}>{item.count > 0 ? item.count : ''}</Text>
+                {/* Icon represents the cry reason */}
+                <Image source={{ uri: PLACEHOLDER_ICON(item.iconColor) }} style={styles.barIcon} />
+              </View>
             ))}
           </View>
         </Card>
