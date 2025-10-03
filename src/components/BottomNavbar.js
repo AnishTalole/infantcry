@@ -10,11 +10,9 @@ const { width } = Dimensions.get('window');
 // Define the navigation items
 const navItems = [
   { name: 'Home', route: 'Home', icon: 'home-outline' },
-  { name: 'Milestone', route: 'Milestone', icon: 'trophy-outline' },
   // Placeholder for center button (Cry Detector/Record) - This will be the main entry point
   { name: 'Record', route: 'Home', icon: 'microphone', isCenter: true },
   { name: 'History', route: 'History', icon: 'history' },
-  { name: 'Profile', route: 'ProfileSetup', icon: 'account-outline' },
 ];
 
 const BottomNavbar = ({ navigation, currentRoute }) => {

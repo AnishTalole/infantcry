@@ -13,6 +13,7 @@ import MilestoneScreen from '../screens/main/MilestoneScreen'; // Corrected comp
 import PredictionResultScreen from '../screens/main/PredictionResultScreen';
 import FeedbackScreen from '../screens/main/FeedbackScreen';
 import HomeScreen from '../screens/main/HomeScreen'; 
+import RemedyScreen from '../screens/main/RemedyScreen';
 
 // --- 2. IMPORT THEME/COLORS ---
 const COLORS = {
@@ -42,6 +43,7 @@ const MainStack = () => {
       <Stack.Screen name="Milestone" component={MilestoneScreen} />
       <Stack.Screen name="PredictionResult" component={PredictionResultScreen} />
       <Stack.Screen name="Feedback" component={FeedbackScreen} />
+      <Stack.Screen name="Remedy" component={RemedyScreen} />
     </Stack.Navigator>
   );
 };

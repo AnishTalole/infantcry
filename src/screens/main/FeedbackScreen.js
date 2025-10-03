@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native'; // ADDED: Alert
 import CustomHeader from '../../components/CustomHeader';
 import PrimaryButton from '../../components/PrimaryButton';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
 
 const FeedbackScreen = ({ navigation }) => {
-  const [rating, setRating] = useState(0);
+  const [usefulness, setUsefulness] = useState(null); // 'useful', 'not_useful', or null
+  const [comment, setComment] = useState('');
+  
   const [currentRoute, setCurrentRoute] = useState('Feedback'); 
   
   useFocusEffect(
@@ -18,10 +20,58 @@ const FeedbackScreen = ({ navigation }) => {
     }, [navigation])
   );
 
+  const handleSubmit = () => {
+    console.log('Feedback submitted:', { usefulness, comment });
+    
+    // Simple validation
+    if (!usefulness) {
+        Alert.alert("Required", "Please select if the result was useful or not useful.");
+        return;
+    }
+
+    // --- ADDED: Pop-up alert after successful submission ---
+    Alert.alert(
+      "Thank You!",
+      "Your response has been recorded.",
+      [
+        { 
+          text: "OK", 
+          // Navigate only after the user dismisses the alert
+          onPress: () => navigation.navigate('Home') 
+        }
+      ]
+    );
+    // --- END ADDED ---
+  };
+
+  // Helper component for the Useful/Not Useful buttons (Unchanged)
+  const SelectionButton = ({ label, value, iconName, color }) => (
+    <TouchableOpacity 
+      style={[
+        localStyles.selectionButton,
+        usefulness === value && { 
+            borderColor: color, 
+            borderWidth: 2, 
+            backgroundColor: `${color}20`,
+        } 
+      ]} 
+      onPress={() => setUsefulness(value)}
+    >
+      <Ionicons 
+        name={iconName} 
+        size={24} 
+        color={usefulness === value ? color : COLORS.textGray} 
+      />
+      <Text style={[localStyles.selectionButtonText, { color: usefulness === value ? color : COLORS.textDark }]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader title="Feedback" navigation={navigation} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={localStyles.scrollContent}>
         <View style={styles.feedbackContainer}>
           
           <Image
@@ -29,35 +79,38 @@ const FeedbackScreen = ({ navigation }) => {
             style={styles.feedbackImage}
           />
 
-          <Text style={styles.feedbackQuestion}>How helpful was this result?</Text>
+          <Text style={styles.feedbackQuestion}>Was this prediction useful?</Text> 
           <Text style={styles.feedbackAppName}>Infant Cry Detector</Text>
           
-          {/* Star Rating */}
-          <View style={styles.starRatingContainer}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                <FontAwesome
-                  name={star <= rating ? 'star' : 'star-o'}
-                  size={40}
-                  color={COLORS.cardOrange}
-                  style={{ marginHorizontal: 5 }}
-                />
-              </TouchableOpacity>
-            ))}
+          <View style={localStyles.selectionContainer}>
+            <SelectionButton 
+              label="Useful" 
+              value="useful" 
+              iconName="checkmark-circle-sharp" 
+              color={COLORS.cardGreen} 
+            />
+            <SelectionButton 
+              label="Not Useful" 
+              value="not_useful" 
+              iconName="close-circle-sharp" 
+              color={COLORS.secondaryPink} 
+            />
           </View>
           
-          <Text style={styles.commentHeader}>Comment</Text>
+          <Text style={styles.commentHeader}>Comment (Optional)</Text>
           <TextInput
             style={styles.commentInput}
-            placeholder="Add comment here"
+            placeholder="Help us improve by providing details..."
             placeholderTextColor={COLORS.textGray}
             multiline
             numberOfLines={4}
+            value={comment}
+            onChangeText={setComment}
           />
           
           <PrimaryButton
             title="SUBMIT"
-            onPress={() => navigation.navigate('Welcome')}
+            onPress={handleSubmit}
             style={{ marginTop: 40 }}
           />
 
@@ -68,10 +121,34 @@ const FeedbackScreen = ({ navigation }) => {
   );
 };
 
+// Local styles (Unchanged)
 const localStyles = StyleSheet.create({
-  scrollPadding: {
-    paddingBottom: 90, // Match the height of the fixed navigation bar
+  scrollContent: {
+    paddingBottom: 90,
   },
+  selectionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 0,
+    marginBottom: 40,
+  },
+  selectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 15,
+    width: '48%',
+    backgroundColor: COLORS.white,
+    borderColor: '#EEEEEE', 
+    borderWidth: 1,
+  },
+  selectionButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+  }
 });
 
 export default FeedbackScreen;

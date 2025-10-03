@@ -5,8 +5,11 @@ import PrimaryButton from '../../components/PrimaryButton';
 import { styles, PLACEHOLDER_AVATAR, COLORS } from '../../theme/styles'; 
 
 const SignupScreen = ({ navigation }) => {
-  // 1. Change state variables to reflect new inputs
+  // UPDATED: Added parentName state
+  const [parentName, setParentName] = useState(''); 
   const [babyName, setBabyName] = useState('');
+  // NEW: Added babyDOB state
+  const [babyDOB, setBabyDOB] = useState(''); 
   const [phoneNumber, setPhoneNumber] = useState(''); // New state for phone number
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,25 +18,43 @@ const SignupScreen = ({ navigation }) => {
   const handleSignup = () => {
     setError(''); // Clear previous error
 
-    // --- 4. Validation Logic ---
+    // --- UPDATED Validation Logic ---
 
+    // 1. Validate Parent Name
+    if (parentName.trim().length < 2) {
+        setError('Please enter your name.');
+        return;
+    }
+
+    // 2. Validate Baby Name
     if (babyName.trim().length < 2) {
         setError('Please enter a valid Baby Name.');
         return;
     }
 
+    // 3. Validate Baby DOB (Simple check for non-empty string in DD/MM/YYYY format)
+    // NOTE: In a real app, you would use a Date Picker component for better UX/validation.
+    const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/; 
+    if (!dobRegex.test(babyDOB)) {
+        setError('Please enter Baby\'s Date of Birth in DD/MM/YYYY format.');
+        return;
+    }
+
+    // 4. Validate Phone Number
     const phoneRegex = /^\d{10}$/; 
     if (!phoneRegex.test(phoneNumber)) {
         setError('Please enter a valid 10-digit phone number.');
         return;
     }
 
+    // 5. Validate Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         setError('Please enter a valid email address.');
         return;
     }
 
+    // 6. Validate Password
     if (password.length < 6) {
         setError('Password must be at least 6 characters long.');
         return;
@@ -56,23 +77,43 @@ const SignupScreen = ({ navigation }) => {
         />
 
         <View style={styles.inputGroup}>
+          {/* NEW: Parent Name Input */}
           <TextInput
             style={styles.textInput}
-            placeholder="Baby's Name" // Changed placeholder
+            placeholder="Your Name (Parent)"
+            placeholderTextColor={styles.textInputPlaceholder.color}
+            value={parentName}
+            onChangeText={setParentName}
+          />
+          {/* Existing Baby Name Input */}
+          <TextInput
+            style={styles.textInput}
+            placeholder="Baby's Name"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={babyName}
             onChangeText={setBabyName}
           />
-          {/* 2. Added phone number input */}
+          {/* NEW: Baby DOB Input */}
+          <TextInput
+            style={styles.textInput}
+            placeholder="Baby's DOB (DD/MM/YYYY)"
+            placeholderTextColor={styles.textInputPlaceholder.color}
+            value={babyDOB}
+            onChangeText={setBabyDOB}
+            keyboardType="numeric" 
+            maxLength={10} // DD/MM/YYYY is 10 characters
+          />
+          {/* Existing Phone Number Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Phone Number"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
-            keyboardType="phone-pad" // Set keyboard type for numbers
-            maxLength={10} // Limit to 10 digits
+            keyboardType="phone-pad"
+            maxLength={10}
           />
+          {/* Existing Email Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Email Address"
@@ -81,6 +122,7 @@ const SignupScreen = ({ navigation }) => {
             onChangeText={setEmail}
             keyboardType="email-address"
           />
+          {/* Existing Password Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Password"
@@ -91,7 +133,7 @@ const SignupScreen = ({ navigation }) => {
           />
         </View>
 
-        {/* 3. Display Error Message */}
+        {/* Display Error Message */}
         {error ? (
           <Text style={{ color: 'red', marginBottom: 15, fontSize: 14, alignSelf: 'flex-start' }}>
             {error}
@@ -100,9 +142,8 @@ const SignupScreen = ({ navigation }) => {
 
         <PrimaryButton
           title="CREATE ACCOUNT"
-          // Updated onPress to use the validation function
           onPress={handleSignup} 
-          style={{ marginTop: error ? 5 : 30 }} // Adjust margin based on if error is present
+          style={{ marginTop: error ? 5 : 30 }}
         />
 
         <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkButton}>
