@@ -1,31 +1,30 @@
 // src/screens/main/HomeScreen.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
 
-// Get screen width for responsive sizing
+import { uploadRecording } from '../../api/audioApi';
+
 const { width } = Dimensions.get('window');
 
-// --- THEME COLORS (must match global theme) ---
 const COLORS = {
   primaryOrange: '#FF9F4F',
   textDark: '#333333',
   textGray: '#777777',
   white: '#FFFFFF',
-  background: '#FBF8F5', 
+  background: '#FBF8F5',
 };
 
-
-// Component for the Dynamic Waveform visualization (Unchanged)
+// --- Waveform ---
 const DynamicWave = ({ isRecording }) => {
   const barCount = 30;
   const initialHeights = useRef(
-    Array.from({ length: barCount }).map((_, index) => {
-      const heightFactor = Math.abs(Math.sin((index / barCount) * Math.PI * 2.5));
+    Array.from({ length: barCount }).map((_, i) => {
+      const heightFactor = Math.abs(Math.sin((i / barCount) * Math.PI * 2.5));
       return Math.min(30, 5 + heightFactor * 25);
     })
   ).current;
@@ -36,46 +35,32 @@ const DynamicWave = ({ isRecording }) => {
     let interval;
     if (isRecording) {
       interval = setInterval(() => {
-        setBarHeights(prevHeights =>
-          prevHeights.map(height => {
-            const randomDelta = Math.random() * 8 - 4;
-            const newHeight = Math.max(5, Math.min(30, height + randomDelta));
-            return newHeight;
+        setBarHeights(prev =>
+          prev.map(h => {
+            const delta = Math.random() * 8 - 4;
+            return Math.max(5, Math.min(30, h + delta));
           })
         );
       }, 100);
     } else {
       setBarHeights(initialHeights);
     }
-
     return () => clearInterval(interval);
   }, [isRecording, initialHeights]);
-
-  const bars = barHeights.map((height, index) => {
-    const color = index % 2 === 0 ? COLORS.textDark : COLORS.textGray;
-
-    return (
-      <View
-        key={index}
-        style={[
-          styles.waveBar,
-          { height: height, backgroundColor: color, opacity: isRecording ? 1 : 0.7 },
-        ]}
-      />
-    );
-  });
 
   return (
     <View style={styles.waveformContainer}>
       <Text style={styles.timeText}>{isRecording ? '0:00' : '2:33'}</Text>
-      {bars}
+      {barHeights.map((h, i) => (
+        <View
+          key={i}
+          style={[styles.waveBar, { height: h, backgroundColor: i % 2 === 0 ? COLORS.textDark : COLORS.textGray, opacity: isRecording ? 1 : 0.7 }]}
+        />
+      ))}
       <Text style={styles.timeText}>{isRecording ? '0:06' : '4:47'}</Text>
     </View>
   );
 };
-
-
-// --- Main HomeScreen Component ---
 
 const HomeScreen = ({ navigation }) => {
   const [recording, setRecording] = useState(null);
@@ -83,74 +68,35 @@ const HomeScreen = ({ navigation }) => {
   const [sound, setSound] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const stopTimer = useRef(null);
 
+  const stopTimer = useRef(null);
   const [currentRoute, setCurrentRoute] = useState('Home');
 
-  // Stop Recording function
-  const stopRecording = useCallback(async (isAutoStop = false) => {
-    const currentRecording = recording;
-    
-    if (stopTimer.current) {
-        clearTimeout(stopTimer.current);
-        stopTimer.current = null;
-    }
+  // Permissions
+  useEffect(() => {
+    (async () => {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant microphone access to record audio.');
+      }
+    })();
+  }, []);
 
-    if (!currentRecording) return;
-
-    try {
-        setIsRecording(false);
-        await currentRecording.stopAndUnloadAsync();
-        const uri = currentRecording.getURI();
-        setRecordingUri(uri);
-        setRecording(null);
-
-        console.log('Recording stopped and saved to URI:', uri);
-        
-        if (isAutoStop) {
-             Alert.alert('Recording Stopped', 'Recording stopped automatically after 6 seconds.');
-        }
-
-    } catch (err) {
-      console.error('Failed to stop recording', err);
-    }
-  }, [recording]);
-
-  
-  // Clean-up effect for navigation/unmount
+  // Cleanup
   useFocusEffect(
     useCallback(() => {
       const routeName = navigation.getState().routes[navigation.getState().index].name;
       setCurrentRoute(routeName);
-      
+
       return () => {
         if (sound) sound.unloadAsync();
         if (recording) stopRecording();
         if (stopTimer.current) clearTimeout(stopTimer.current);
       };
-    }, [navigation, sound, recording, stopRecording])
+    }, [navigation, sound, recording])
   );
 
-
-  // Permission and Playback Unload Effect
-  useEffect(() => {
-    (async () => {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Please grant microphone access to record audio.',
-          [{ text: 'OK' }]
-        );
-      }
-    })();
-
-    return sound ? () => {
-      sound.unloadAsync();
-    } : undefined;
-  }, [sound]);
-
-  // Start Recording to implement the auto-stop timer
+  // Recording
   const startRecording = async () => {
     if (isRecording) return;
     try {
@@ -160,64 +106,52 @@ const HomeScreen = ({ navigation }) => {
       }
       setRecordingUri(null);
 
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      const { recording: newRecording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       setRecording(newRecording);
       setIsRecording(true);
-      console.log('Recording started');
-      
-      stopTimer.current = setTimeout(() => {
-        stopRecording(true); 
-      }, 6000);
 
+      stopTimer.current = setTimeout(() => stopRecording(true), 6000);
     } catch (err) {
-      console.error('Failed to start recording', err);
-      Alert.alert('Recording Error', 'Could not start recording. Check permissions.');
+      console.error('Start recording error', err);
+      Alert.alert('Error', 'Could not start recording.');
     }
   };
 
-  const handleGetResults = () => {
-    console.log('Navigating to results with URI:', recordingUri);
-    navigation.navigate('PredictionResult');
-    setRecordingUri(null);
-  };
-  
-  const handleDeleteRecording = () => {
-    if (isPlaying) stopPlayback();
-    setRecordingUri(null);
-    Alert.alert('Recording Deleted', 'Your audio recording has been removed.');
-  };
+  const stopRecording = useCallback(async (autoStop = false) => {
+    if (!recording) return;
+    if (stopTimer.current) clearTimeout(stopTimer.current);
 
-  const handleRecordButtonPress = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
+    try {
+      setIsRecording(false);
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecordingUri(uri);
+      setRecording(null);
+      console.log('Recording saved:', uri);
+
+      if (autoStop) Alert.alert('Stopped', 'Recording stopped after 6 seconds.');
+    } catch (err) {
+      console.error('Stop recording error', err);
     }
-  };
+  }, [recording]);
 
-  // Playback functions
+  // Playback
   const playRecording = async () => {
-    if (recordingUri && !isPlaying) {
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: recordingUri },
-          { shouldPlay: true },
-          (status) => {
-            if (status.didJustFinish) {
-              setIsPlaying(false);
-            }
-          }
-        );
-        setSound(sound);
-        setIsPlaying(true);
-        await sound.playAsync();
-        console.log('Playback started');
-      } catch (error) {
-        console.error('Failed to play sound', error);
-        Alert.alert('Playback Error', 'Could not play the recorded audio.');
-      }
+    if (!recordingUri || isPlaying) return;
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: recordingUri },
+        { shouldPlay: true },
+        status => {
+          if (status.didJustFinish) setIsPlaying(false);
+        }
+      );
+      setSound(sound);
+      setIsPlaying(true);
+      await sound.playAsync();
+    } catch (err) {
+      console.error('Playback error', err);
+      Alert.alert('Playback Error', 'Cannot play audio.');
     }
   };
 
@@ -225,163 +159,93 @@ const HomeScreen = ({ navigation }) => {
     if (sound && isPlaying) {
       await sound.stopAsync();
       setIsPlaying(false);
-      console.log('Playback stopped');
     }
   };
 
-  const handlePlaybackPress = () => {
-    if (isPlaying) {
-      stopPlayback();
-    } else {
-      playRecording();
+  // Upload & Get Results
+  const handleGetResults = async () => {
+    if (!recordingUri) {
+      Alert.alert("No Recording", "Please record audio first.");
+      return;
+    }
+
+    try {
+      const result = await uploadRecording(recordingUri); // Removed deviceToken
+
+      // Navigate to PredictionResultScreen with API response
+      navigation.navigate("PredictionResult", { prediction: result });
+
+      setRecordingUri(null);
+    } catch (err) {
+      Alert.alert("Upload Failed", "Could not upload audio. Please try again.");
     }
   };
 
-  // UI variables
+  const handleDeleteRecording = () => {
+    if (isPlaying) stopPlayback();
+    setRecordingUri(null);
+    Alert.alert('Recording Deleted', 'Your recording has been removed.');
+  };
+
+  const handleRecordPress = () => {
+    if (isRecording) stopRecording();
+    else startRecording();
+  };
+
   const micIcon = isRecording ? 'stop' : 'microphone';
   const buttonText = isRecording ? 'Tap to Stop (Auto-stop in 6s)' : 'Tap to Record';
   const playbackIcon = isPlaying ? 'pause-circle-outline' : 'play-circle-outline';
   const playbackText = isPlaying ? 'Stop Playback' : 'Listen to Recording';
-  const showGetResultsButton = recordingUri && !isRecording && !isPlaying;
+  const showGetResults = recordingUri && !isRecording && !isPlaying;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
 
-        <View style={styles.content}>
-
-          {/* Main Recording Button Area */}
-          <TouchableOpacity
-            style={styles.recordButtonContainer}
-            onPress={handleRecordButtonPress}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.micCircle, isRecording && styles.micCircleRecording]}>
-              <MaterialCommunityIcons name={micIcon} size={width * 0.15} color={COLORS.white} />
-            </View>
-          </TouchableOpacity>
-
-          <Text style={styles.recordText}>{buttonText}</Text>
-          <Text style={styles.freeCountText}>
-            {isRecording ? 'Recording...' : '5 Free for Today'}
-          </Text>
-
-          {/* Waveform and Playback */}
-          <View style={styles.waveformWrapper}>
-            <DynamicWave isRecording={isRecording || isPlaying} />
-
-            {recordingUri && !isRecording && (
-              <View style={styles.playbackControls}>
-                <TouchableOpacity
-                  style={styles.playbackButton}
-                  onPress={handlePlaybackPress}
-                  disabled={isRecording}
-                >
-                  <MaterialCommunityIcons
-                    name={playbackIcon}
-                    size={48}
-                    color={isRecording ? COLORS.textGray : COLORS.primaryOrange}
-                  />
-                </TouchableOpacity>
-                <Text style={styles.playbackButtonText}>
-                  {playbackText}
-                </Text>
-
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={handleDeleteRecording}
-                >
-                  <Ionicons
-                    name="close-circle-sharp"
-                    size={30}
-                    color="#D90000"
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
+        {/* Record Button */}
+        <TouchableOpacity style={styles.recordButtonContainer} onPress={handleRecordPress} activeOpacity={0.8}>
+          <View style={[styles.micCircle, isRecording && styles.micCircleRecording]}>
+            <MaterialCommunityIcons name={micIcon} size={width * 0.15} color={COLORS.white} />
           </View>
+        </TouchableOpacity>
+
+        <Text style={styles.recordText}>{buttonText}</Text>
+        <Text style={styles.freeCountText}>{isRecording ? 'Recording...' : '5 Free for Today'}</Text>
+
+        {/* Waveform and Playback */}
+        <View style={styles.waveformWrapper}>
+          <DynamicWave isRecording={isRecording || isPlaying} />
+          {recordingUri && !isRecording && (
+            <View style={styles.playbackControls}>
+              <TouchableOpacity onPress={playRecording} disabled={isRecording}>
+                <MaterialCommunityIcons name={playbackIcon} size={48} color={isRecording ? COLORS.textGray : COLORS.primaryOrange} />
+              </TouchableOpacity>
+              <Text style={styles.playbackButtonText}>{playbackText}</Text>
+              <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteRecording}>
+                <Ionicons name="close-circle-sharp" size={30} color="#D90000" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Get Results Button */}
-        {showGetResultsButton && (
-          <TouchableOpacity
-            style={styles.getResultsButton}
-            onPress={handleGetResults}
-            activeOpacity={0.8}
-          >
+        {showGetResults && (
+          <TouchableOpacity style={styles.getResultsButton} onPress={handleGetResults} activeOpacity={0.8}>
             <Text style={styles.getResultsText}>Get Results</Text>
           </TouchableOpacity>
         )}
 
-        {/* Functional Navigation Bar */}
+        {/* Bottom Navigation */}
         <BottomNavbar navigation={navigation} currentRoute={currentRoute} />
       </View>
     </SafeAreaView>
   );
 };
 
-// --- Styles ---
-
+// Styles
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    paddingBottom: 90, 
-    // FIX 2: Center content vertically to balance space above and below the mic button
-    justifyContent: 'center', 
-  },
-  header: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    // FIX 1: Reduce top margin/padding to prevent the header from being too far down
-    // Use a fixed small value on both platforms, relying on SafeAreaView for initial inset
-    marginTop: 10, 
-    paddingTop: 0, 
-    // This padding should be large enough to push the header down from the very top, but not excessive.
-    // NOTE: This marginBottom is now the primary space creator above the limitText
-    marginBottom: 20, 
-    position: 'absolute', // Make the header float at the top
-    top: 0, // Pin it to the top
-    width: '100%', // Ensure it spans the full width
-    backgroundColor: COLORS.background, // Important for floating header
-    zIndex: 10, // Ensure it is above other content
-  },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFDC7B',
-    marginRight: 15,
-  },
-  nameText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-  },
-  monthText: {
-    fontSize: 16,
-    color: COLORS.textGray,
-  },
-  limitText: {
-    fontSize: 15,
-    color: COLORS.textGray,
-    // This margin is crucial now that header is absolute
-    marginTop: 100, // Push content down past the absolute header
-    marginBottom: 30,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' },
   recordButtonContainer: {
     width: width * 0.7,
     height: width * 0.7,
@@ -399,71 +263,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  micCircleRecording: {
-    backgroundColor: '#D90000',
-    width: width * 0.6,
-    height: width * 0.6,
-    borderRadius: 20,
-  },
-  recordText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 5,
-  },
-  freeCountText: {
-    fontSize: 16,
-    color: COLORS.textGray,
-  },
-  waveformWrapper: {
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 40,
-    width: '100%',
-  },
-  waveformContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 60,
-    width: width * 0.85,
-    marginBottom: 20,
-  },
-  waveBar: {
-    width: 3,
-    marginHorizontal: 0.5,
-    borderRadius: 1,
-  },
-  timeText: {
-    fontSize: 12,
-    color: COLORS.textGray,
-    marginHorizontal: 10,
-  },
-  playbackControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: width * 0.85,
-    position: 'relative',
-  },
-  playbackButton: {},
-  playbackButtonText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    position: 'absolute',
-    right: 0,
-    padding: 5,
-  },
+  micCircleRecording: { backgroundColor: '#D90000' },
+  recordText: { fontSize: 24, fontWeight: '700', color: COLORS.textDark, marginBottom: 5 },
+  freeCountText: { fontSize: 16, color: COLORS.textGray },
+  waveformWrapper: { height: 100, justifyContent: 'center', alignItems: 'center', marginVertical: 40, width: '100%' },
+  waveformContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 60, width: width * 0.85, marginBottom: 20 },
+  waveBar: { width: 3, marginHorizontal: 0.5, borderRadius: 1 },
+  timeText: { fontSize: 12, color: COLORS.textGray, marginHorizontal: 10 },
+  playbackControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: width * 0.85, position: 'relative' },
+  playbackButtonText: { marginLeft: 10, fontSize: 16, color: COLORS.textDark, fontWeight: '600' },
+  deleteButton: { position: 'absolute', right: 0, padding: 5 },
   getResultsButton: {
-    // This button remains fixed relative to the bottom, which is good.
     position: 'absolute',
     bottom: 90,
-    left:30,
     width: width * 0.85,
     height: 55,
     borderRadius: 30,
@@ -471,16 +283,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
-    shadowColor: COLORS.primaryOrange,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
   },
-  getResultsText: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  getResultsText: { color: COLORS.white, fontSize: 18, fontWeight: 'bold' },
 });
 
 export default HomeScreen;

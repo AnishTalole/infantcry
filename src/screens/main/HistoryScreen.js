@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,17 +10,6 @@ import { styles, COLORS, PLACEHOLDER_ICON } from '../../theme/styles';
 
 const { width } = Dimensions.get('window');
 
-// --- MOCK DATA SIMULATION ---
-const MOCK_HISTORY_DATA = [
-  { id: 1, reason: "Discomfort", time: "Today, 15:30", color: COLORS.secondaryPink, confidence: 69.29, predictionId: 'pid_1', count: 5 },
-  { id: 2, reason: "Hunger", time: "Today, 10:15", color: COLORS.primaryOrange, confidence: 75.12, predictionId: 'pid_2', count: 12 },
-  { id: 3, reason: "Tired", time: "Yesterday, 20:00", color: COLORS.cardYellow, confidence: 88.05, predictionId: 'pid_3', count: 23 },
-  { id: 4, reason: "Discomfort", time: "12 May. 13:24PM", color: COLORS.secondaryPink, confidence: 55.60, predictionId: 'pid_4', count: 15 },
-  { id: 5, reason: "Burping", time: "11 May. 09:00AM", color: COLORS.cardGreen, confidence: 62.40, predictionId: 'pid_5', count: 1 },
-  { id: 6, reason: "Belly Pain", time: "11 May. 10:00AM", color: COLORS.cardPurple, confidence: 91.00, predictionId: 'pid_6', count: 3 },
-];
-
-// All 5 cry types defined
 const CRY_TYPES = {
     "Discomfort": COLORS.secondaryPink,
     "Hunger": COLORS.primaryOrange,
@@ -30,11 +20,57 @@ const CRY_TYPES = {
 
 const HistoryScreen = ({ navigation }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Week');
-  const [historyItems, setHistoryItems] = useState(MOCK_HISTORY_DATA); 
+  const [historyItems, setHistoryItems] = useState([]);
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // UPDATED: Calculation now creates a percentage distribution of cry types
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const userId = await AsyncStorage.getItem('userId'); // Ensure userId is stored
+
+        if (!token || !userId) {
+          Alert.alert('Error', 'Missing token or user ID');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`https://grand-prosperity-production.up.railway.app/api/predictions/history/${userId}`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch history');
+
+        const data = await response.json();
+        const historyData = data[0]?.history || [];
+        const statsData = data[0]?.stats || {};
+
+        // Map API response to match current UI structure
+        const processedHistory = historyData.map((item, index) => ({
+          id: index + 1,
+          reason: item.predictedReason.charAt(0).toUpperCase() + item.predictedReason.slice(1),
+          time: new Date(item.dateTime).toLocaleString(),
+          color: CRY_TYPES[item.predictedReason.charAt(0).toUpperCase() + item.predictedReason.slice(1)] || COLORS.cardYellow,
+          confidence: item.confidenceScore,
+          predictionId: item.predictionId || null, // if API provides
+        }));
+
+        setHistoryItems(processedHistory);
+        setStats(statsData);
+      } catch (error) {
+        console.log('Error fetching history:', error);
+        Alert.alert('Error', 'Could not fetch history');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
   const chartData = useMemo(() => {
-    // 1. Count occurrences of each cry type
     const counts = historyItems.reduce((acc, item) => {
         acc[item.reason] = (acc[item.reason] || 0) + 1;
         return acc;
@@ -42,22 +78,13 @@ const HistoryScreen = ({ navigation }) => {
 
     const totalCount = historyItems.length;
 
-    // 2. Create the data structure, calculating the percentage for each type
     return Object.entries(CRY_TYPES).map(([reason, color]) => {
         const count = counts[reason] || 0;
-        // Percentage of total occurrences (0 to 1)
         const rawPercentage = totalCount > 0 ? (count / totalCount) : 0;
-        
-        return {
-            label: reason,
-            count: count,
-            percentage: rawPercentage * 100, // Storing 0 to 100 for easy use in UI
-            iconColor: color,
-        };
-    }).sort((a, b) => b.percentage - a.percentage); // Sort by percentage descending
+        return { label: reason, count, percentage: rawPercentage * 100, iconColor: color };
+    }).sort((a, b) => b.percentage - a.percentage);
   }, [historyItems]);
 
-  
   const HistoryItem = ({ label, time, iconColor, confidence, itemData }) => (
     <TouchableOpacity 
       style={styles.historyItem} 
@@ -71,13 +98,13 @@ const HistoryScreen = ({ navigation }) => {
         </View>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: iconColor }}>
-            {confidence.toFixed(0)}%
-        </Text>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: iconColor }}>{confidence.toFixed(0)}%</Text>
         <Ionicons name="arrow-forward" size={20} color={COLORS.textGray} style={{ marginTop: 5 }} />
       </View>
     </TouchableOpacity>
   );
+
+  if (loading) return <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} />;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -86,56 +113,28 @@ const HistoryScreen = ({ navigation }) => {
         
         {/* Period Selector */}
         <Card style={styles.periodSelectorCard}>
-          {['Week', 'Month', 'All'].map((period) => (
+          {['Week', 'Month', 'All'].map(period => (
             <TouchableOpacity
               key={period}
-              style={[
-                styles.periodButton,
-                selectedPeriod === period && styles.periodButtonActive,
-              ]}
+              style={[styles.periodButton, selectedPeriod === period && styles.periodButtonActive]}
               onPress={() => setSelectedPeriod(period)}
             >
-              <Text
-                style={[
-                  styles.periodButtonText,
-                  selectedPeriod === period && styles.periodButtonTextActive,
-                ]}
-              >
-                {period}
-              </Text>
+              <Text style={[styles.periodButtonText, selectedPeriod === period && styles.periodButtonTextActive]}>{period}</Text>
             </TouchableOpacity>
           ))}
         </Card>
 
-        {/* Charts/Graphs (Now showing percentage and label) */}
+        {/* Charts */}
         <Card style={styles.chartCard}>
           <Text style={localStyles.chartTitle}>Cry Distribution ({selectedPeriod})</Text>
           <View style={styles.barChartContainer}>
-            {/* Filter to only show cry types that occurred at least once for cleaner visualization */}
             {chartData.filter(item => item.count > 0).map((item, index) => (
               <View key={index} style={localStyles.barWrapper}>
                 <View style={styles.barOuter}>
-                  <View style={[styles.barInner, { 
-                      // Bar height is based on percentage (0-100)
-                      height: `${Math.max(5, item.percentage)}%`, 
-                      backgroundColor: item.iconColor 
-                  }]} />
+                  <View style={[styles.barInner, { height: `${Math.max(5, item.percentage)}%`, backgroundColor: item.iconColor }]} />
                 </View>
-                
-                {/* Show Percentage as Label */}
                 <Text style={styles.barLabel}>{item.percentage.toFixed(0)}%</Text>
-                
-                {/* NEW: Show the cry reason label below the percentage */}
-                <Text 
-                    style={[
-                        localStyles.reasonLabel, 
-                        { color: item.iconColor, fontSize: item.label.length > 10 ? 9 : 10 } // Shrink font for long labels like 'Belly Pain'
-                    ]}
-                >
-                    {item.label}
-                </Text>
-
-                {/* Icon represents the cry reason */}
+                <Text style={[localStyles.reasonLabel, { color: item.iconColor, fontSize: item.label.length > 10 ? 9 : 10 }]}>{item.label}</Text>
                 <Image source={{ uri: PLACEHOLDER_ICON(item.iconColor) }} style={styles.barIcon} />
               </View>
             ))}
@@ -144,54 +143,29 @@ const HistoryScreen = ({ navigation }) => {
 
         <Text style={styles.sectionHeader}>Translates</Text>
         
-        {/* History List */}
         <View>
-          {historyItems.map((item) => (
+          {historyItems.map(item => (
             <HistoryItem 
               key={item.id}
-              label={item.reason} 
-              time={item.time} 
-              iconColor={item.color} 
+              label={item.reason}
+              time={item.time}
+              iconColor={item.color}
               confidence={item.confidence}
               itemData={item}
             />
           ))}
-          
         </View>
-
       </ScrollView>
-      {/* UPDATED: Removed currentRoute prop */}
       <BottomNavbar navigation={navigation} />
     </SafeAreaView>
   );
 };
 
 const localStyles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: 90, 
-    paddingHorizontal: 20,
-  },
-  chartTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: COLORS.textDark,
-      marginBottom: 10,
-      paddingHorizontal: 10,
-  },
-  // ADJUSTED: Replicate styles.barWrapper to add space for the new label
-  barWrapper: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'flex-end',
-    width: (width - 40 - 20) / 6, // Distribute width evenly for all bars
-  },
-  reasonLabel: {
-    textAlign: 'center',
-    fontWeight: '600',
-    marginTop: 2,
-    marginBottom: 5, // Push icon down slightly
-    width: '100%',
-  }
+  scrollContent: { paddingBottom: 90, paddingHorizontal: 20 },
+  chartTitle: { fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 10, paddingHorizontal: 10 },
+  barWrapper: { alignItems: 'center', height: '100%', justifyContent: 'flex-end', width: (width - 40 - 20) / 6 },
+  reasonLabel: { textAlign: 'center', fontWeight: '600', marginTop: 2, marginBottom: 5, width: '100%' },
 });
 
 export default HistoryScreen;

@@ -1,39 +1,48 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
-import PrimaryButton from '../../components/PrimaryButton';
-import { styles, PLACEHOLDER_AVATAR } from '../../theme/styles';
+import React, { useState } from "react";
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert } from "react-native";
+import PrimaryButton from "../../components/PrimaryButton";
+import { styles, PLACEHOLDER_AVATAR } from "../../theme/styles";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { login } from "../../api/auth";
 
 const LoginScreen = ({ navigation }) => {
-  // 1. Change state from email to phoneNumber
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(''); // State to hold validation error message
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    setError(''); // Clear previous error
+  const handleLogin = async () => {
+    setError("");
 
-    // --- 4. Simple Validation Logic ---
-
-    // Simple Phone Number Validation (e.g., must be 10 digits)
-    const phoneRegex = /^\d{10}$/; 
+    // --- Validation ---
+    const phoneRegex = /^\d{10}$/;
     if (!phoneRegex.test(phoneNumber)) {
-      setError('Please enter a valid 10-digit phone number.');
-      // You can also use React Native's built-in Alert for a more immediate feedback:
-      // Alert.alert('Login Failed', 'Please enter a valid 10-digit phone number.');
+      setError("Please enter a valid 10-digit phone number.");
       return;
     }
 
-    // Simple Password Validation (e.g., must be at least 6 characters)
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      // Alert.alert('Login Failed', 'Password must be at least 6 characters long.');
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
-    // If validation passes, navigate to Home
-    // In a real app, you would call your API for authentication here
-    console.log('Login successful with:', phoneNumber);
-    navigation.navigate('Home');
+    // --- API Call ---
+    try {
+      const mobileWithCode = `+91${phoneNumber}`; // Add country code
+      console.log("Sending login request with:", mobileWithCode, password);
+
+      const data = await login(mobileWithCode, password);
+
+      // Save token for future authenticated requests
+      await AsyncStorage.setItem("token", data.token);
+
+      Alert.alert("Login Successful");
+      console.log("Token received:", data.token);
+
+      navigation.navigate("Home");
+    } catch (err) {
+      console.error("Login error:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Login failed. Please try again.");
+    }
   };
 
   return (
@@ -43,20 +52,19 @@ const LoginScreen = ({ navigation }) => {
         <Text style={styles.authSubtitle}>Sign in to your Baby Translator account.</Text>
 
         <Image
-          source={{ uri: PLACEHOLDER_AVATAR('FF9F4F') }}
+          source={{ uri: PLACEHOLDER_AVATAR("FF9F4F") }}
           style={styles.authImage}
         />
 
         <View style={styles.inputGroup}>
-          {/* 2. Change input for phone number */}
           <TextInput
             style={styles.textInput}
-            placeholder="Phone Number" 
+            placeholder="Phone Number"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
-            keyboardType="phone-pad" // Use phone-pad keyboard
-            maxLength={10} // Optional: Limit input to 10 characters
+            keyboardType="phone-pad"
+            maxLength={10}
           />
           <TextInput
             style={styles.textInput}
@@ -68,24 +76,18 @@ const LoginScreen = ({ navigation }) => {
           />
         </View>
 
-        {/* 4. Display Error Message */}
         {error ? (
-          <Text style={{ color: 'red', marginBottom: 15, fontSize: 14 }}>
+          <Text style={{ color: "red", marginBottom: 15, fontSize: 14 }}>
             {error}
           </Text>
         ) : null}
 
-        <PrimaryButton
-          title="LOG IN"
-          // 3. Update onPress to use the new validation function
-          onPress={handleLogin}
-          style={{ marginTop: 15 }} // Reduced margin since error text is above
-        />
+        <PrimaryButton title="LOG IN" onPress={handleLogin} style={{ marginTop: 15 }} />
 
-        <TouchableOpacity onPress={() => navigation.navigate('Signup')} style={styles.linkButton}>
+        <TouchableOpacity onPress={() => navigation.navigate("Signup")} style={styles.linkButton}>
           <Text style={styles.linkButtonText}>Don't have an account? Sign Up</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.linkButton}>
           <Text style={styles.linkButtonText}>Forgot Password?</Text>
         </TouchableOpacity>
@@ -94,4 +96,4 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-export default LoginScreen;                                 
+export default LoginScreen;
