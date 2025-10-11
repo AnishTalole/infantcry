@@ -1,30 +1,42 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native'; // ADDED: StyleSheet for local styles
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
 import { Ionicons } from '@expo/vector-icons';
-// Ensure COLORS is imported from styles for the Image source
 import { styles, PLACEHOLDER_AVATAR, COLORS } from '../../theme/styles';
 import { signup } from "../../api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
 const SignupScreen = ({ navigation }) => {
-  // UPDATED: Added parentName state
   const [parentName, setParentName] = useState('');
   const [babyName, setBabyName] = useState('');
-  // NEW: Added babyDOB state
   const [babyDOB, setBabyDOB] = useState('');
-  // NEW: Added babyGender state
-  const [babyGender, setBabyGender] = useState(null); // 'Boy' or 'Girl'
-  const [phoneNumber, setPhoneNumber] = useState(''); // New state for phone number
+  const [babyGender, setBabyGender] = useState(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(''); // State to hold validation error message
+  const [error, setError] = useState('');
+
+  // --- 1. NEW FUNCTION TO AUTO-FORMAT DATE INPUT ---
+  const handleDOBChange = (text) => {
+    // Remove all non-digit characters
+    const cleaned = text.replace(/[^0-9]/g, '');
+    let formatted = cleaned;
+
+    // Add slashes after the day and month
+    if (cleaned.length > 2) {
+      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+    }
+    if (cleaned.length > 4) {
+      formatted = `${formatted.slice(0, 5)}/${formatted.slice(5, 9)}`;
+    }
+
+    setBabyDOB(formatted);
+  };
 
   const handleSignup = async () => {
     setError(""); // Clear previous errors
 
-    // --- Validation (keep your existing validation code here) ---
+    // --- Validation ---
     if (parentName.trim().length < 2) {
       setError("Please enter your name.");
       return;
@@ -34,7 +46,6 @@ const SignupScreen = ({ navigation }) => {
       return;
     }
 
-    // Convert DD/MM/YYYY → YYYY-MM-DD for backend
     const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/;
     if (!dobRegex.test(babyDOB)) {
       setError("Please enter Baby's Date of Birth in DD/MM/YYYY format.");
@@ -77,14 +88,10 @@ const SignupScreen = ({ navigation }) => {
         password: password,
       };
 
-      console.log("Signup Payload:", payload);
-
       const data = await signup(payload);
 
-      // Save token for future requests
       await AsyncStorage.setItem("token", data.token);
 
-      console.log("Signup Success:", data);
       alert("Signup successful!");
       navigation.navigate("Home");
     } catch (error) {
@@ -93,7 +100,6 @@ const SignupScreen = ({ navigation }) => {
     }
   };
 
-  // Helper Component for Gender Buttons
   const GenderButton = ({ gender, iconName, label }) => (
     <TouchableOpacity
       style={[
@@ -130,7 +136,6 @@ const SignupScreen = ({ navigation }) => {
         />
 
         <View style={styles.inputGroup}>
-          {/* Parent Name Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Your Name (Parent)"
@@ -138,7 +143,6 @@ const SignupScreen = ({ navigation }) => {
             value={parentName}
             onChangeText={setParentName}
           />
-          {/* Baby Name Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Baby's Name"
@@ -146,18 +150,18 @@ const SignupScreen = ({ navigation }) => {
             value={babyName}
             onChangeText={setBabyName}
           />
-          {/* Baby DOB Input */}
+          
+          {/* --- 2. UPDATED DOB TEXTINPUT --- */}
           <TextInput
             style={styles.textInput}
             placeholder="Baby's DOB (DD/MM/YYYY)"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={babyDOB}
-            onChangeText={setBabyDOB}
-            keyboardType="numeric"
-            maxLength={10}
+            onChangeText={handleDOBChange} // Use the new handler
+            keyboardType="number-pad" // Changed to allow numbers and symbols
+            maxLength={10} // DD/MM/YYYY is 10 characters
           />
 
-          {/* NEW: Baby Gender Selection */}
           <Text style={localStyles.genderLabel}>Baby's Gender</Text>
           <View style={localStyles.genderRow}>
             <GenderButton gender="Boy" iconName="male" label="Boy" />
@@ -165,9 +169,8 @@ const SignupScreen = ({ navigation }) => {
             <GenderButton gender="Other" iconName="transgender" label="Other" />
           </View>
 
-          {/* Existing Phone Number Input */}
           <TextInput
-            style={[styles.textInput, { marginTop: 15 }]} // Add margin to separate from gender buttons
+            style={[styles.textInput, { marginTop: 15 }]}
             placeholder="Phone Number"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={phoneNumber}
@@ -175,7 +178,6 @@ const SignupScreen = ({ navigation }) => {
             keyboardType="phone-pad"
             maxLength={10}
           />
-          {/* Existing Email Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Email Address"
@@ -184,7 +186,6 @@ const SignupScreen = ({ navigation }) => {
             onChangeText={setEmail}
             keyboardType="email-address"
           />
-          {/* Existing Password Input */}
           <TextInput
             style={styles.textInput}
             placeholder="Password"
@@ -195,7 +196,6 @@ const SignupScreen = ({ navigation }) => {
           />
         </View>
 
-        {/* Display Error Message */}
         {error ? (
           <Text style={{ color: 'red', marginBottom: 15, fontSize: 14, alignSelf: 'flex-start' }}>
             {error}
@@ -216,7 +216,6 @@ const SignupScreen = ({ navigation }) => {
   );
 };
 
-// Local styles for Gender component
 const localStyles = StyleSheet.create({
   genderLabel: {
     fontSize: 16,

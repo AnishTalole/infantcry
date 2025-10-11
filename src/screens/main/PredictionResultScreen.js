@@ -3,7 +3,6 @@ import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleShe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
-import { Ionicons } from '@expo/vector-icons';
 import BottomNavbar from '../../components/BottomNavbar';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,7 +41,7 @@ const getColorForReason = (reason) => {
 };
 
 const PredictionResultScreen = ({ navigation, route }) => {
-  const { prediction } = route.params; // API response from HomeScreen
+  const { prediction } = route.params;
 
   const fullBreakdown = [
     { label: 'Hunger', percentage: prediction.hungerPercentage || 0, color: getColorForReason('hunger') },
@@ -66,7 +65,6 @@ const PredictionResultScreen = ({ navigation, route }) => {
     }, [navigation])
   );
 
-  // Save predictionId in AsyncStorage
   useEffect(() => {
     const savePredictionId = async () => {
       try {
@@ -97,24 +95,18 @@ const PredictionResultScreen = ({ navigation, route }) => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.resultCard}>
           <View style={localStyles.resultHeader}>
-            <Image source={{ uri: PLACEHOLDER_AVATAR('8F8F8F') }} style={styles.resultImage} />
-            <View style={localStyles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.resultActionBtn, { backgroundColor: COLORS.cardGreen }]}
-                onPress={() => navigation.navigate('Feedback')}
-              >
-                <Ionicons name="checkmark-sharp" size={24} color={COLORS.white} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.resultActionBtn, { backgroundColor: COLORS.secondaryPink, marginLeft: 20 }]}
-                onPress={() => navigation.navigate('Feedback')}
-              >
-                <Ionicons name="close-sharp" size={24} color={COLORS.white} />
-              </TouchableOpacity>
-            </View>
+            <Image source={require('../../../assets/babyimg.png')} style={styles.resultImage} />
+            
+            {/* --- START: MODIFIED SECTION --- */}
+            <PrimaryButton
+              title="GIVE FEEDBACK"
+              onPress={() => navigation.navigate('Feedback')}
+              style={localStyles.feedbackButton}
+            />
+            {/* --- END: MODIFIED SECTION --- */}
+
           </View>
 
-          {/* Primary Prediction */}
           <Card style={styles.predictionDetailCard}>
             <View style={localStyles.predictionHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -129,17 +121,15 @@ const PredictionResultScreen = ({ navigation, route }) => {
           </Card>
         </Card>
 
-        {/* Full Breakdown */}
+        <View style={localStyles.remedyButtonContainer}>
+          <PrimaryButton title="VIEW ALL REMEDIES" onPress={handleGetRemedies} style={localStyles.remedyButton} />
+        </View>
+
         <View style={localStyles.breakdownContainer}>
           <Text style={localStyles.breakdownTitle}>Full Prediction Breakdown</Text>
           {fullBreakdown.map((item, index) => (
             <PredictionBar key={index} label={item.label} percentage={item.percentage} iconColor={item.color} />
           ))}
-        </View>
-
-        {/* Remedies Button */}
-        <View style={localStyles.remedyButtonContainer}>
-          <PrimaryButton title="VIEW ALL REMEDIES" onPress={handleGetRemedies} style={localStyles.remedyButton} />
         </View>
       </ScrollView>
 
@@ -148,9 +138,16 @@ const PredictionResultScreen = ({ navigation, route }) => {
   );
 };
 
+// --- STYLES MODIFIED HERE ---
 const localStyles = StyleSheet.create({
   resultHeader: { alignItems: 'center', marginBottom: 20 },
-  actionButtons: { flexDirection: 'row', marginTop: 20 },
+  feedbackButton: {
+    marginTop: 20,
+    width: '80%',
+    backgroundColor: '#6c757d',
+    paddingRight:20,
+    paddingLeft:20,
+  },
   predictionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   remedyButtonContainer: { paddingHorizontal: 20, marginTop: 30, marginBottom: 10 },
   remedyButton: { backgroundColor: COLORS.secondaryPink },
