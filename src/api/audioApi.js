@@ -1,7 +1,7 @@
 // src/api/audioApi.js
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 const API_URL = "https://grand-prosperity-production.up.railway.app/api/audio";
 

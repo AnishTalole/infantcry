@@ -79,7 +79,7 @@ const PredictionResultScreen = ({ navigation, route }) => {
   }, [prediction.predictionId]);
 
   const handleGetRemedies = () => {
-    navigation.navigate('RemedyScreen', {
+    navigation.navigate('Remedy', {
       primaryLabel: mainReason,
     });
   };

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert } from "react-native";
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert, StyleSheet } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from "../../components/PrimaryButton";
-import { styles, PLACEHOLDER_AVATAR } from "../../theme/styles";
+import { styles, COLORS } from "../../theme/styles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "../../api/auth";
+import { jwtDecode } from "jwt-decode";
 
 const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -27,17 +29,16 @@ const LoginScreen = ({ navigation }) => {
 
     // --- API Call ---
     try {
-      const mobileWithCode = `+91${phoneNumber}`; // Add country code
-      console.log("Sending login request with:", mobileWithCode, password);
-
+      const mobileWithCode = `+91${phoneNumber}`;
       const data = await login(mobileWithCode, password);
-
-      // Save token for future authenticated requests
+      
       await AsyncStorage.setItem("token", data.token);
 
-      Alert.alert("Login Successful");
-      console.log("Token received:", data.token);
+      const decodedToken = jwtDecode(data.token);
+      const userId = decodedToken.sub;
+      await AsyncStorage.setItem("userId", userId);
 
+      Alert.alert("Login Successful");
       navigation.navigate("Home");
     } catch (err) {
       console.error("Login error:", err.response?.data || err.message);
@@ -52,7 +53,7 @@ const LoginScreen = ({ navigation }) => {
         <Text style={styles.authSubtitle}>Sign in to your Baby Translator account.</Text>
 
         <Image
-          source={{ uri: PLACEHOLDER_AVATAR("FF9F4F") }}
+          source={require('../../../assets/babyimg.png')}
           style={styles.authImage}
         />
 
@@ -77,9 +78,10 @@ const LoginScreen = ({ navigation }) => {
         </View>
 
         {error ? (
-          <Text style={{ color: "red", marginBottom: 15, fontSize: 14 }}>
-            {error}
-          </Text>
+          <View style={localStyles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={20} color={COLORS.secondaryPink} />
+            <Text style={localStyles.errorText}>{error}</Text>
+          </View>
         ) : null}
 
         <PrimaryButton title="LOG IN" onPress={handleLogin} style={{ marginTop: 15 }} />
@@ -95,5 +97,26 @@ const LoginScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
+// --- 3. ADD LOCAL STYLES FOR THE ERROR MESSAGE ---
+const localStyles = StyleSheet.create({
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FDEDED', // A light pink/red background
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: COLORS.secondaryPink,
+  },
+  errorText: {
+    color: COLORS.secondaryPink,
+    fontSize: 14,
+    marginLeft: 10,
+    fontWeight: '600',
+  },
+});
 
 export default LoginScreen;

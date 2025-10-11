@@ -118,7 +118,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const stopRecording = useCallback(async (autoStop = false) => {
-    if (!recording) return;
+    if (!recording || !isRecording) return;
     if (stopTimer.current) clearTimeout(stopTimer.current);
 
     try {
@@ -210,7 +210,7 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
 
         <Text style={styles.recordText}>{buttonText}</Text>
-        <Text style={styles.freeCountText}>{isRecording ? 'Recording...' : '5 Free for Today'}</Text>
+        <Text style={styles.freeCountText}>{isRecording ? 'Recording...' : 'Start Recording'}</Text>
 
         {/* Waveform and Playback */}
         <View style={styles.waveformWrapper}>
