@@ -41,17 +41,30 @@ const getColorForReason = (reason) => {
 };
 
 const PredictionResultScreen = ({ navigation, route }) => {
-  const { prediction } = route.params;
+  // Support both the older `prediction` param shape and the new API response
+  const raw = route.params.prediction || route.params.apiResponse || {};
 
-  const fullBreakdown = [
-    { label: 'Hunger', percentage: prediction.hungerPercentage || 0, color: getColorForReason('hunger') },
-    { label: 'Discomfort', percentage: prediction.discomfortPercentage || 0, color: getColorForReason('discomfort') },
-    { label: 'Tired', percentage: prediction.tiredPercentage || 0, color: getColorForReason('tired') },
-    { label: 'Belly Pain', percentage: prediction.bellyPainPercentage || 0, color: getColorForReason('bellypain') },
-    { label: 'Burping', percentage: prediction.burpingPercentage || 0, color: getColorForReason('burping') },
-  ];
+  const isApiShape = raw && (raw.cry_detected === 0 || raw.cry_detected === 1);
+  const cryDetected = isApiShape ? (raw.cry_detected === 1) : true;
 
-  const mainReason = prediction.mainReason || fullBreakdown[0].label;
+  // If API shape (backend sample), derive breakdown from `breakdown` object
+  const fullBreakdown = isApiShape
+    ? [
+        { label: 'Hunger', percentage: (raw.breakdown && raw.breakdown['Hungry']) || 0, color: getColorForReason('hunger') },
+        { label: 'Discomfort', percentage: (raw.breakdown && raw.breakdown['Discomfort']) || 0, color: getColorForReason('discomfort') },
+        { label: 'Tired', percentage: (raw.breakdown && raw.breakdown['Tired']) || 0, color: getColorForReason('tired') },
+        { label: 'Belly Pain', percentage: (raw.breakdown && raw.breakdown['Belly Pain']) || 0, color: getColorForReason('bellypain') },
+        { label: 'Burping', percentage: (raw.breakdown && raw.breakdown['Burping']) || 0, color: getColorForReason('burping') },
+      ]
+    : [
+        { label: 'Hunger', percentage: raw.hungerPercentage || 0, color: getColorForReason('hunger') },
+        { label: 'Discomfort', percentage: raw.discomfortPercentage || 0, color: getColorForReason('discomfort') },
+        { label: 'Tired', percentage: raw.tiredPercentage || 0, color: getColorForReason('tired') },
+        { label: 'Belly Pain', percentage: raw.bellyPainPercentage || 0, color: getColorForReason('bellypain') },
+        { label: 'Burping', percentage: raw.burpingPercentage || 0, color: getColorForReason('burping') },
+      ];
+
+  const mainReason = isApiShape ? (raw.prediction || fullBreakdown[0].label) : (raw.mainReason || fullBreakdown[0].label);
   const primaryPrediction = fullBreakdown.find(p => p.label.toLowerCase() === mainReason.toLowerCase()) || fullBreakdown[0];
   const confidencePercent = `${primaryPrediction.percentage.toFixed(1)}%`;
   const progressBarWidth = `${primaryPrediction.percentage}%`;
@@ -68,13 +81,14 @@ const PredictionResultScreen = ({ navigation, route }) => {
   useEffect(() => {
     const savePredictionId = async () => {
       try {
-        await AsyncStorage.setItem('predictionId', prediction.predictionId.toString());
+        const id = raw.predictionId || raw.id || '';
+        if (id) await AsyncStorage.setItem('predictionId', id.toString());
       } catch (error) {
         console.log('Error saving predictionId:', error);
       }
     };
     savePredictionId();
-  }, [prediction.predictionId]);
+  }, [raw]);
 
   const handleGetRemedies = () => {
     navigation.navigate('Remedy', {
@@ -108,16 +122,32 @@ const PredictionResultScreen = ({ navigation, route }) => {
           </View>
 
           <Card style={styles.predictionDetailCard}>
-            <View style={localStyles.predictionHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image source={{ uri: PLACEHOLDER_ICON(primaryPrediction.color) }} style={styles.smallIcon} />
-                <Text style={styles.predictionText}>{mainReason}</Text>
+            {cryDetected ? (
+              <>
+                <View style={localStyles.predictionHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Image source={{ uri: PLACEHOLDER_ICON(primaryPrediction.color) }} style={styles.smallIcon} />
+                    <Text style={styles.predictionText}>{mainReason}</Text>
+                  </View>
+                  <Text style={styles.predictionPercent}>{confidencePercent}</Text>
+                </View>
+                <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBar, { width: progressBarWidth, backgroundColor: primaryPrediction.color }]} />
+                </View>
+              </>
+            ) : (
+              // Noise detected layout
+              <View style={localStyles.noiseContainer}>
+                <Text style={styles.predictionText}>Noise Detected</Text>
+                <Text style={localStyles.noiseSubtitle}>Top noises detected in the audio</Text>
+                {raw.top_noises && Object.entries(raw.top_noises).map(([label, pct], idx) => (
+                  <View key={idx} style={localStyles.noiseRow}>
+                    <Text style={localStyles.noiseLabel}>{label}</Text>
+                    <Text style={localStyles.noisePercent}>{pct.toFixed ? pct.toFixed(1) : pct}%</Text>
+                  </View>
+                ))}
               </View>
-              <Text style={styles.predictionPercent}>{confidencePercent}</Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: progressBarWidth, backgroundColor: primaryPrediction.color }]} />
-            </View>
+            )}
           </Card>
         </Card>
 
@@ -157,6 +187,11 @@ const localStyles = StyleSheet.create({
   predictionBarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
   barLabel: { fontSize: 16, fontWeight: '600', color: COLORS.textDark },
   barPercent: { fontSize: 16, fontWeight: '700' },
+  noiseContainer: { paddingVertical: 10 },
+  noiseSubtitle: { fontSize: 14, color: COLORS.textMuted, marginTop: 6, marginBottom: 10 },
+  noiseRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  noiseLabel: { fontSize: 16, color: COLORS.textDark },
+  noisePercent: { fontSize: 16, fontWeight: '700', color: COLORS.primaryOrange },
 });
 
 export default PredictionResultScreen;

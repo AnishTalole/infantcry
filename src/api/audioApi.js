@@ -2,6 +2,8 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+import { USE_MOCK } from "./config";
+import * as mockApi from "./mockApi";
 
 const API_URL = "https://grand-prosperity-production.up.railway.app/api/audio";
 
@@ -13,6 +15,11 @@ const API_URL = "https://grand-prosperity-production.up.railway.app/api/audio";
  */
 export const uploadRecording = async (audioUri, deviceToken) => {
   try {
+    // If using mock, return a fake prediction
+    if (USE_MOCK) {
+      return mockApi.uploadRecording(audioUri, deviceToken);
+    }
+
     // 1. Get token from storage
     const token = await AsyncStorage.getItem("token");
     if (!token) throw new Error("User not authenticated");
