@@ -7,6 +7,7 @@ import BottomNavbar from '../../components/BottomNavbar';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR, PLACEHOLDER_ICON } from '../../theme/styles';
+import FallbackImage from '../../components/FallbackImage';
 
 // Helper component to render a single prediction bar
 const PredictionBar = ({ label, percentage, iconColor }) => {
@@ -17,7 +18,7 @@ const PredictionBar = ({ label, percentage, iconColor }) => {
     <View style={localStyles.predictionBarContainer}>
       <View style={localStyles.predictionBarHeader}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image source={{ uri: PLACEHOLDER_ICON(iconColor) }} style={styles.smallIcon} />
+          <FallbackImage source={{ uri: PLACEHOLDER_ICON(iconColor) }} style={styles.smallIcon} />
           <Text style={localStyles.barLabel}>{label}</Text>
         </View>
         <Text style={[localStyles.barPercent, { color: iconColor }]}>{safePercentage.toFixed(1)}%</Text>
@@ -42,7 +43,7 @@ const getColorForReason = (reason) => {
 
 const PredictionResultScreen = ({ navigation, route }) => {
   // Support both the older `prediction` param shape and the new API response
-  const raw = route.params.prediction || route.params.apiResponse || {};
+  const raw = route?.params?.prediction || route?.params?.apiResponse || route?.params || {};
 
   const isApiShape = raw && (raw.cry_detected === 0 || raw.cry_detected === 1);
   const cryDetected = isApiShape ? (raw.cry_detected === 1) : true;
@@ -126,7 +127,7 @@ const PredictionResultScreen = ({ navigation, route }) => {
               <>
                 <View style={localStyles.predictionHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Image source={{ uri: PLACEHOLDER_ICON(primaryPrediction.color) }} style={styles.smallIcon} />
+                    <FallbackImage source={{ uri: PLACEHOLDER_ICON(primaryPrediction.color) }} style={styles.smallIcon} />
                     <Text style={styles.predictionText}>{mainReason}</Text>
                   </View>
                   <Text style={styles.predictionPercent}>{confidencePercent}</Text>
@@ -185,8 +186,9 @@ const localStyles = StyleSheet.create({
   breakdownTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, marginBottom: 15 },
   predictionBarContainer: { marginBottom: 15 },
   predictionBarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  barLabel: { fontSize: 16, fontWeight: '600', color: COLORS.textDark },
+  barLabel: { fontSize: 16, fontWeight: '600', color: COLORS.textDark, flexShrink: 1 },
   barPercent: { fontSize: 16, fontWeight: '700' },
+  emptyText: { color: COLORS.textGray, fontSize: 14, paddingVertical: 20 },
   noiseContainer: { paddingVertical: 10 },
   noiseSubtitle: { fontSize: 14, color: COLORS.textMuted, marginTop: 6, marginBottom: 10 },
   noiseRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },

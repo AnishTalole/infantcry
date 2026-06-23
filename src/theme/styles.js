@@ -8,6 +8,7 @@ export const COLORS = {
   background: '#FAF5EC', // Light Peach/Beige
   textDark: '#333333',
   textGray: '#777777',
+  textMuted: '#8A8A8A',
   white: '#FFFFFF',
   cardOrange: '#FF9F4F',
   cardGreen: '#C6EF97',

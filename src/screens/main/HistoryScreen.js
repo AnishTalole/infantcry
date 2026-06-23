@@ -3,6 +3,7 @@ import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleShe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
+import FallbackImage from '../../components/FallbackImage';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavbar from '../../components/BottomNavbar';
 import { styles, COLORS, PLACEHOLDER_ICON } from '../../theme/styles';
@@ -119,7 +120,7 @@ const HistoryScreen = ({ navigation }) => {
       onPress={() => navigation.navigate('Remedy', { predictionId: itemData.predictionId, primaryLabel: label })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Image source={{ uri: PLACEHOLDER_ICON(iconColor) }} style={styles.smallIcon} />
+        <FallbackImage source={{ uri: PLACEHOLDER_ICON(iconColor) }} style={styles.smallIcon} />
         <View style={{ marginLeft: 15 }}>
           <Text style={styles.historyLabel}>{label}</Text>
           <Text style={styles.historyTime}>{time}</Text>
@@ -165,7 +166,7 @@ const HistoryScreen = ({ navigation }) => {
                 <View style={localStyles.labelContainer}>
                   <Text style={localStyles.barPercentageLabel}>{item.percentage.toFixed(0)}%</Text>
                   <Text style={[localStyles.reasonLabel, { color: item.iconColor }]}>{item.label}</Text>
-                  <Image source={{ uri: PLACEHOLDER_ICON(item.iconColor) }} style={localStyles.barIcon} />
+                  <FallbackImage source={{ uri: PLACEHOLDER_ICON(item.iconColor) }} style={localStyles.barIcon} />
                 </View>
               </View>
               // --- END: MODIFIED BAR STRUCTURE ---

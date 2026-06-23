@@ -31,6 +31,9 @@ const LoginScreen = ({ navigation }) => {
     try {
       const mobileWithCode = `+91${phoneNumber}`;
       const data = await login(mobileWithCode, password);
+      if (!data || !data.token) {
+        throw new Error('Invalid login response');
+      }
       
       await AsyncStorage.setItem("token", data.token);
 

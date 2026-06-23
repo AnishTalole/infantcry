@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, Image, StyleSheet,Platform } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
+import FallbackImage from '../../components/FallbackImage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
@@ -41,7 +42,7 @@ const MilestoneScreen = ({ navigation }) => {
     <Card style={[styles.milestoneCard, { backgroundColor: color }]}>
       <Text style={styles.milestoneTitle}>{title}</Text>
       <View style={{ flex: 1, justifyContent: 'flex-end', flexDirection: 'row', alignItems: 'center' }}>
-        <Image source={{ uri: PLACEHOLDER_ICON(iconColor) }} style={styles.milestoneImage} />
+        <FallbackImage source={{ uri: PLACEHOLDER_ICON(iconColor) }} style={styles.milestoneImage} />
         <Ionicons name="arrow-forward" size={24} color={COLORS.textDark} />
       </View>
     </Card>
