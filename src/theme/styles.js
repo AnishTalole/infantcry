@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -92,7 +92,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'android' ? 24 : 20,
     paddingBottom: 15,
   },
   headerTitle: {
@@ -217,6 +217,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 80,
     marginBottom: 60,
+    position: 'relative',
   },
   welcomeCircle: {
     width: 250,
@@ -504,6 +505,41 @@ export const styles = StyleSheet.create({
     height: 60,
     borderRadius: 10,
     marginRight: 10,
+  },
+  categoryCard: {
+    width: '48%',
+    minHeight: 140,
+    justifyContent: 'space-between',
+    padding: 15,
+  },
+  categoryCardActive: {
+    borderWidth: 2,
+    borderColor: COLORS.primaryOrange,
+  },
+  categorySubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: COLORS.textGray,
+    lineHeight: 20,
+  },
+  categoryDetailCard: {
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    ...SHADOW,
+    shadowOpacity: 0.1,
+  },
+  categoryDetailTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginBottom: 10,
+  },
+  categoryDetailText: {
+    fontSize: 15,
+    color: COLORS.textGray,
+    lineHeight: 22,
   },
 
   // --- Feedback Screen Styles ---

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert, StyleSheet } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from "../../components/PrimaryButton";
+import CustomHeader from '../../components/CustomHeader';
 import { styles, COLORS } from "../../theme/styles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "../../api/auth";
@@ -51,6 +52,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.authContainer}>
+      <CustomHeader title="Login" navigation={navigation} />
       <ScrollView contentContainerStyle={styles.authScrollContent}>
         <Text style={styles.authTitle}>Welcome Back</Text>
         <Text style={styles.authSubtitle}>Sign in to your Baby Translator account.</Text>

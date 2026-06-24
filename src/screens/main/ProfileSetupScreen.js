@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Dimensions, StyleSheet } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import CustomHeader from '../../components/CustomHeader';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
@@ -60,6 +59,7 @@ const ProfileSetupScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <CustomHeader title="Profile" navigation={navigation} />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 50 }}>
         <View style={{ marginBottom: 20 }}>
           <Text style={styles.profileTitle}>Create Your Baby's Profile</Text>

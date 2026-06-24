@@ -52,7 +52,7 @@ const BottomNavbar = ({ navigation, currentRoute }) => {
             <MaterialCommunityIcons 
               name={item.icon} 
               size={30} 
-              color={isActive ? COLORS.primaryOrange : COLORS.textGray} 
+              color={isActive ? COLORS.primaryOrange : COLORS.textDark} 
             />
             <Text style={isActive ? styles.navTextActive : styles.navText}>
               {item.name}

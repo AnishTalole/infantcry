@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
 import { Ionicons } from '@expo/vector-icons';
+import CustomHeader from '../../components/CustomHeader';
 import { styles, PLACEHOLDER_AVATAR, COLORS } from '../../theme/styles';
 import { signup } from "../../api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -126,6 +127,7 @@ const SignupScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.authContainer}>
+      <CustomHeader title="Sign Up" navigation={navigation} />
       <ScrollView contentContainerStyle={styles.authScrollContent}>
         <Text style={styles.authTitle}>Create Account</Text>
         <Text style={styles.authSubtitle}>Join the community of caring parents.</Text>

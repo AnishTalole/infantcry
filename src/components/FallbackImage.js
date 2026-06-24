@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image } from 'react-native';
 
-const fallbackIcon = require('../assets/icon.png');
+const fallbackIcon = require('../../assets/icon.png');
 
 const FallbackImage = ({ source, style, ...props }) => {
   const [failed, setFailed] = useState(false);

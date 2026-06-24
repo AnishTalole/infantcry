@@ -1,7 +1,7 @@
 import React from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, Image } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
-import Feather from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
 
 const WelcomeScreen = ({ navigation }) => {
@@ -21,17 +21,17 @@ const WelcomeScreen = ({ navigation }) => {
         </View>
 
         {/* Buttons around the circle */}
-        <TouchableOpacity onPress={() => navigation.navigate('Milestones')} style={[styles.welcomeFloatingButton, { top: 30, right: 30 }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('Milestone')} style={[styles.welcomeFloatingButton, { top: 30, right: 20 }]}>
           <Feather name="book-open" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.welcomeFloatingButtonText}>Baby care tips</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={() => navigation.navigate('PredictionResult')} style={[styles.welcomeFloatingButton, { top: 100, right: -40 }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('PredictionResult')} style={[styles.welcomeFloatingButton, { top: 100, right: 16 }]}>
           <Feather name="mic" size={20} color={COLORS.secondaryPink} />
           <Text style={styles.welcomeFloatingButtonText}>Cry Translation</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={() => navigation.navigate('History')} style={[styles.welcomeFloatingButton, { top: 170, left: -40 }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('History')} style={[styles.welcomeFloatingButton, { top: 100, left: 16 }]}>
           <Feather name="bar-chart-2" size={20} color={COLORS.secondaryPink} />
           <Text style={styles.welcomeFloatingButtonText}>Cry History</Text>
         </TouchableOpacity>
