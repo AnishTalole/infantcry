@@ -3,6 +3,7 @@ import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Imag
 import PrimaryButton from '../../components/PrimaryButton';
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import CustomHeader from '../../components/CustomHeader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
@@ -59,7 +60,21 @@ const ProfileSetupScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Profile" navigation={navigation} />
+      <CustomHeader
+        title="Profile"
+        navigation={navigation}
+        showRightButton={true}
+        rightIcon="log-out-outline"
+        onRightPress={async () => {
+          Alert.alert('Logout', 'Are you sure you want to logout?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: async () => {
+              try { await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId'); } catch (e) { console.warn(e); }
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } }
+          ]);
+        }}
+      />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 50 }}>
         <View style={{ marginBottom: 20 }}>
           <Text style={styles.profileTitle}>Create Your Baby's Profile</Text>

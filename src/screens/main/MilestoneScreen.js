@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { SafeAreaView, ScrollView, Text, View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import CustomHeader from '../../components/CustomHeader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Card from '../../components/Card';
 import BottomNavbar from '../../components/BottomNavbar';
 import { useFocusEffect } from '@react-navigation/native';
@@ -298,7 +299,21 @@ const MilestoneScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Milestones" navigation={navigation} />
+      <CustomHeader
+        title="Milestones"
+        navigation={navigation}
+        showRightButton={true}
+        rightIcon="log-out-outline"
+        onRightPress={async () => {
+          Alert.alert('Logout', 'Are you sure you want to logout?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: async () => {
+              try { await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId'); } catch (e) { console.warn(e); }
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } }
+          ]);
+        }}
+      />
       <ScrollView contentContainerStyle={[styles.scrollContent, localStyles.scrollContentWithPadding]}>
         <View style={{ paddingTop: 10, paddingBottom: 10 }}>
           <Text style={styles.milestoneIntroTitle}>{activeAgeData.title}</Text>

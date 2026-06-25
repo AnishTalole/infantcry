@@ -98,12 +98,20 @@ const PredictionResultScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader
-        title="Result"
-        navigation={navigation}
-        showRightButton
-        rightIcon="share-outline"
-        onRightPress={() => console.log('Share result')}
-      />
+            title="Result"
+            navigation={navigation}
+            showRightButton={true}
+            rightIcon="log-out-outline"
+            onRightPress={async () => {
+              Alert.alert('Logout', 'Are you sure you want to logout?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Logout', style: 'destructive', onPress: async () => {
+                  try { await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId'); } catch (e) { console.warn(e); }
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                } }
+              ]);
+            }}
+          />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.resultCard}>

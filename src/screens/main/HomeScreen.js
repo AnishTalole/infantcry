@@ -1,10 +1,12 @@
 // src/screens/main/HomeScreen.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions, SafeAreaView, Platform, ScrollView, BackHandler } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavbar from '../../components/BottomNavbar';
+import CustomHeader from '../../components/CustomHeader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { uploadRecording } from '../../api/audioApi';
@@ -92,6 +94,7 @@ const HomeScreen = ({ navigation }) => {
 
   const stopTimer = useRef(null);
   const [currentRoute, setCurrentRoute] = useState('Home');
+  const backHandlerRef = useRef(null);
 
   // Permissions
   useEffect(() => {
@@ -109,7 +112,22 @@ const HomeScreen = ({ navigation }) => {
       const routeName = navigation.getState().routes[navigation.getState().index].name;
       setCurrentRoute(routeName);
 
+      // Handle cleanup and prevent hardware back from leaving Home
+      const onHardwareBack = () => {
+        // If we're on Home, keep user on Home (consume event)
+        if (routeName === 'Home') {
+          navigation.navigate('Home');
+          return true;
+        }
+        return false;
+      };
+
+      backHandlerRef.current = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+
       return () => {
+        if (backHandlerRef.current) {
+          backHandlerRef.current.remove();
+        }
         if (sound) sound.unloadAsync();
         if (recording) stopRecording();
         if (stopTimer.current) clearTimeout(stopTimer.current);
@@ -330,13 +348,28 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <CustomHeader
+        title="Home"
+        navigation={navigation}
+        showBackButton={false}
+        showRightButton={true}
+        rightIcon="log-out-outline"
+        onRightPress={async () => {
+          Alert.alert('Logout', 'Are you sure you want to logout?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: async () => {
+              try {
+                await AsyncStorage.removeItem('token');
+                await AsyncStorage.removeItem('userId');
+              } catch (e) {
+                console.warn('Logout storage clear failed', e);
+              }
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } }
+          ]);
+        }}
+      />
       <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
-        {/* Record Button */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textDark} />
-          </TouchableOpacity>
-        </View>
 
         <TouchableOpacity style={styles.recordButtonContainer} onPress={handleRecordPress} activeOpacity={0.8}>
           <View style={[styles.micCircle, isRecording && styles.micCircleRecording]}>

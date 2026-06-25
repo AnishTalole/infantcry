@@ -81,7 +81,21 @@ const FeedbackScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Feedback" navigation={navigation} />
+      <CustomHeader
+        title="Feedback"
+        navigation={navigation}
+        showRightButton={true}
+        rightIcon="log-out-outline"
+        onRightPress={async () => {
+          Alert.alert('Logout', 'Are you sure you want to logout?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: async () => {
+              try { await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId'); } catch (e) { console.warn(e); }
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } }
+          ]);
+        }}
+      />
       <ScrollView contentContainerStyle={localStyles.scrollContent}>
         <Text style={styles.feedbackQuestion}>Was this prediction useful?</Text>
         <View style={localStyles.selectionContainer}>

@@ -82,7 +82,21 @@ const RemedyScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Detailed Remedies" navigation={navigation} showRightButton={false} />
+      <CustomHeader
+        title="Detailed Remedies"
+        navigation={navigation}
+        showRightButton={true}
+        rightIcon="log-out-outline"
+        onRightPress={async () => {
+          Alert.alert('Logout', 'Are you sure you want to logout?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: async () => {
+              try { await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId'); } catch (e) { console.warn(e); }
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } }
+          ]);
+        }}
+      />
       <ScrollView contentContainerStyle={localRemedyStyles.scrollContent}>
         <Text style={styles.sectionHeader}>Top Cry Analysis</Text>
         <Text style={localRemedyStyles.introText}>

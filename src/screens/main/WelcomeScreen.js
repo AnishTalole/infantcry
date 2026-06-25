@@ -1,12 +1,14 @@
 import React from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, Image } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
+import CustomHeader from '../../components/CustomHeader';
 import { Feather } from '@expo/vector-icons';
 import { styles, COLORS, PLACEHOLDER_AVATAR } from '../../theme/styles';
 
 const WelcomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
+      <CustomHeader title="Welcome" navigation={navigation} showBackButton={navigation.canGoBack && navigation.canGoBack()} />
       {/* Top Bubble Shapes (Simplified) */}
       <View style={{ position: 'absolute', top: 50, left: 20, width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.secondaryPink, opacity: 0.3 }} />
       <View style={{ position: 'absolute', top: 150, right: 40, width: 15, height: 15, borderRadius: 7.5, backgroundColor: COLORS.primaryOrange, opacity: 0.5 }} />
