@@ -19,8 +19,14 @@ const COLORS = {
   background: '#FBF8F5',
 };
 
+const formatDuration = (millis) => {
+  const seconds = Math.min(6, Math.round(millis / 1000));
+  const padded = seconds.toString().padStart(2, '0');
+  return `0:${padded}`;
+};
+
 // --- Waveform ---
-const DynamicWave = ({ active }) => {
+const DynamicWave = ({ active, progress = 0 }) => {
   const barCount = 28;
   const initialHeights = useRef(
     Array.from({ length: barCount }).map((_, i) => {
@@ -30,6 +36,7 @@ const DynamicWave = ({ active }) => {
   ).current;
 
   const [barHeights, setBarHeights] = useState(initialHeights);
+  const progressWidth = `${Math.min(1, Math.max(0, progress)) * 100}%`;
 
   useEffect(() => {
     let interval;
@@ -52,17 +59,20 @@ const DynamicWave = ({ active }) => {
 
   return (
     <View style={styles.waveformContainer}>
-      <Text style={styles.timeText}>0:00</Text>
-      <View style={styles.waveBarsRow}>
-        {barHeights.map((h, i) => (
-          <View
-            key={i}
-            style={[
-              styles.waveBar,
-              { height: h, backgroundColor: i % 2 === 0 ? COLORS.primaryOrange : COLORS.textGray, opacity: active ? 1 : 0.6 },
-            ]}
-          />
-        ))}
+      <Text style={styles.timeText}>{formatDuration(progress * 6000)}</Text>
+      <View style={styles.waveformProgressWrapper}>
+        <View style={[styles.waveProgressOverlay, { width: progressWidth }]} />
+        <View style={styles.waveBarsRow}>
+          {barHeights.map((h, i) => (
+            <View
+              key={i}
+              style={[
+                styles.waveBar,
+                { height: h, backgroundColor: i % 2 === 0 ? COLORS.primaryOrange : COLORS.textGray, opacity: active ? 1 : 0.6 },
+              ]}
+            />
+          ))}
+        </View>
       </View>
       <Text style={styles.timeText}>0:06</Text>
     </View>
@@ -76,6 +86,9 @@ const HomeScreen = ({ navigation }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordingProgress, setRecordingProgress] = useState(0);
+  const preparingRef = useRef(false);
 
   const stopTimer = useRef(null);
   const [currentRoute, setCurrentRoute] = useState('Home');
@@ -106,7 +119,7 @@ const HomeScreen = ({ navigation }) => {
 
   // Recording
   const startRecording = async () => {
-    if (isRecording) return;
+    if (isRecording || preparingRef.current) return;
     try {
       if (sound) {
         await sound.unloadAsync();
@@ -121,13 +134,54 @@ const HomeScreen = ({ navigation }) => {
         setRecording(null);
       }
       setRecordingUri(null);
+      setRecordingDuration(0);
+      setRecordingProgress(0);
 
-      const { recording: newRecording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      preparingRef.current = true;
+      // Attempt to create a new Recording; if native reports an existing prepared Recording,
+      // try to stop any leftover recording and retry once.
+      let newRecording;
+      try {
+        const result = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        newRecording = result.recording;
+      } catch (createErr) {
+        const msg = (createErr && (createErr.message || createErr.toString())) || '';
+        if (msg.includes('Only one Recording object can be prepared') || msg.includes('Only one recording object can be prepared')) {
+          // try to clean up any existing recording and retry
+          try {
+            if (recording) {
+              await recording.stopAndUnloadAsync();
+            }
+          } catch (cleanupErr) {
+            console.warn('Cleanup before retry failed', cleanupErr);
+          }
+          // small delay then retry
+          await new Promise(res => setTimeout(res, 250));
+          const retryResult = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+          newRecording = retryResult.recording;
+        } else {
+          throw createErr;
+        }
+      }
+      newRecording.setOnRecordingStatusUpdate(status => {
+        if (!status.isLoaded) return;
+        setRecordingDuration(status.durationMillis);
+        setRecordingProgress(Math.min(1, status.durationMillis / 6000));
+      });
+      // Use global Audio progress interval (Recording may not expose setProgressUpdateIntervalMillis on all SDKs)
+      try {
+        Audio.setProgressUpdateIntervalMillis && Audio.setProgressUpdateIntervalMillis(100);
+      } catch (e) {
+        // ignore if not supported
+      }
+
       setRecording(newRecording);
       setIsRecording(true);
 
       stopTimer.current = setTimeout(() => stopRecording(true), 6000);
+      preparingRef.current = false;
     } catch (err) {
+      preparingRef.current = false;
       console.error('Start recording error', err);
       Alert.alert('Error', 'Could not start recording.');
     }
@@ -145,12 +199,17 @@ const HomeScreen = ({ navigation }) => {
         setIsRecording(false);
       }
       await recording.stopAndUnloadAsync();
+      const status = await recording.getStatusAsync();
       const uri = recording.getURI();
+      setRecordingDuration(status.durationMillis);
+      setRecordingProgress(Math.min(1, status.durationMillis / 6000));
       setRecordingUri(uri);
       setRecording(null);
+      preparingRef.current = false;
       console.log('Recording saved:', uri);
       if (autoStop) Alert.alert('Stopped', 'Recording stopped after 6 seconds.');
     } catch (err) {
+      preparingRef.current = false;
       console.error('Stop recording error', err);
     }
   }, [recording, isRecording]);
@@ -247,6 +306,8 @@ const HomeScreen = ({ navigation }) => {
   const handleDeleteRecording = () => {
     if (isPlaying) stopPlayback();
     setRecordingUri(null);
+    setRecordingDuration(0);
+    setRecordingProgress(0);
     Alert.alert('Recording Deleted', 'Your recording has been removed.');
   };
 
@@ -259,6 +320,12 @@ const HomeScreen = ({ navigation }) => {
   const buttonText = isRecording ? 'Stop Recording' : 'Start Recording';
   const playbackIcon = isPlaying ? 'pause-circle-outline' : 'play-circle-outline';
   const playbackText = isPlaying ? 'Pause Playback' : isPaused ? 'Resume Playback' : 'Play Recorded Audio';
+  const recordedSeconds = Math.max(0, Math.floor(recordingDuration / 1000));
+  const freeCountText = isRecording
+    ? `Recording in progress (${formatDuration(recordingDuration)})`
+    : recordingUri
+      ? `Recorded ${recordedSeconds} second${recordedSeconds === 1 ? '' : 's'}`
+      : 'Tap to start a new recording';
   const showGetResults = recordingUri && !isRecording;
 
   return (
@@ -278,7 +345,7 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
 
         <Text style={styles.recordText}>{buttonText}</Text>
-        <Text style={styles.freeCountText}>{isRecording ? 'Recording in progress' : recordingUri ? 'Review your recording below' : 'Tap to start a new recording'}</Text>
+        <Text style={styles.freeCountText}>{freeCountText}</Text>
 
         <View style={styles.recordingCard}>
           <View style={styles.recordStatusRow}>
@@ -288,7 +355,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.recordSubtitle}>{recordingUri ? 'Audio ready to play' : 'Ready to record'}</Text>
           </View>
 
-          <DynamicWave active={isRecording || isPlaying} />
+          <DynamicWave active={isRecording || isPlaying} progress={recordingProgress} />
 
           {recordingUri && (
             <View style={styles.playbackControls}>
@@ -344,7 +411,9 @@ const styles = StyleSheet.create({
   backButton: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center', borderRadius: 12, backgroundColor: 'rgba(255,159,79,0.12)' },
   waveformWrapper: { width: '100%', alignItems: 'center', marginBottom: 20 },
   waveformContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 60, width: width * 0.85, marginBottom: 18 },
-  waveBarsRow: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginHorizontal: 12 },
+  waveformProgressWrapper: { position: 'relative', flex: 1, marginHorizontal: 12, height: 60, justifyContent: 'center' },
+  waveProgressOverlay: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: 'rgba(255, 159, 79, 0.15)' },
+  waveBarsRow: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   waveBar: { width: 5, borderRadius: 4, marginHorizontal: 1 },
   timeText: { fontSize: 12, color: COLORS.textGray },
   playbackControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: width * 0.85, marginTop: 10 },

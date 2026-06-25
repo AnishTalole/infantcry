@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import PrimaryButton from '../../components/PrimaryButton';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../../components/CustomHeader';
@@ -97,7 +97,8 @@ const SignupScreen = ({ navigation }) => {
       navigation.navigate("Home");
     } catch (error) {
       console.error("Signup Error:", error.response?.data || error.message);
-      setError(error.response?.data?.message || "Signup failed. Try again.");
+      const apiError = error.response?.data?.message || error.response?.data?.error || (typeof error.response?.data === 'string' ? error.response.data : null);
+      setError(apiError || "Signup failed. Try again.");
     }
   };
 
@@ -126,18 +127,22 @@ const SignupScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.authContainer}>
-      <CustomHeader title="Sign Up" navigation={navigation} />
-      <ScrollView contentContainerStyle={styles.authScrollContent}>
-        <Text style={styles.authTitle}>Create Account</Text>
-        <Text style={styles.authSubtitle}>Join the community of caring parents.</Text>
+    <KeyboardAvoidingView
+      style={styles.authContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={90}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <SafeAreaView style={styles.authContainer}>
+          <CustomHeader title="Sign Up" navigation={navigation} />
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.authScrollContent, { paddingBottom: 80 }]} keyboardShouldPersistTaps="handled">
 
-        <Image
-          source={{ uri: PLACEHOLDER_AVATAR(COLORS.secondaryPink) }}
-          style={styles.authImage}
-        />
+            <Image
+              source={{ uri: PLACEHOLDER_AVATAR(COLORS.secondaryPink) }}
+              style={styles.authImage}
+            />
 
-        <View style={styles.inputGroup}>
+            <View style={styles.inputGroup}>
           <TextInput
             style={styles.textInput}
             placeholder="Your Name (Parent)"
@@ -159,15 +164,15 @@ const SignupScreen = ({ navigation }) => {
             placeholder="Baby's DOB (DD/MM/YYYY)"
             placeholderTextColor={styles.textInputPlaceholder.color}
             value={babyDOB}
-            onChangeText={handleDOBChange} // Use the new handler
-            keyboardType="number-pad" // Changed to allow numbers and symbols
-            maxLength={10} // DD/MM/YYYY is 10 characters
+            onChangeText={handleDOBChange}
+            keyboardType="number-pad"
+            maxLength={10}
           />
 
           <Text style={localStyles.genderLabel}>Baby's Gender</Text>
           <View style={localStyles.genderRow}>
-            <GenderButton gender="Boy" iconName="male" label="Boy" />
-            <GenderButton gender="Girl" iconName="female" label="Girl" />
+            <GenderButton gender="Male" iconName="male" label="Boy" />
+            <GenderButton gender="Female" iconName="female" label="Girl" />
             <GenderButton gender="Other" iconName="transgender" label="Other" />
           </View>
 
@@ -199,9 +204,10 @@ const SignupScreen = ({ navigation }) => {
         </View>
 
         {error ? (
-          <Text style={{ color: 'red', marginBottom: 15, fontSize: 14, alignSelf: 'flex-start' }}>
-            {error}
-          </Text>
+          <View style={localStyles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={20} color={COLORS.secondaryPink} />
+            <Text style={localStyles.errorText}>{error}</Text>
+          </View>
         ) : null}
 
         <PrimaryButton
@@ -215,6 +221,8 @@ const SignupScreen = ({ navigation }) => {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+  </TouchableWithoutFeedback>
+</KeyboardAvoidingView>
   );
 };
 
@@ -259,7 +267,26 @@ const localStyles = StyleSheet.create({
   },
   genderTextSelected: {
     color: COLORS.white,
-  }
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FDEDED',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: COLORS.secondaryPink,
+    width: '100%',
+  },
+  errorText: {
+    color: COLORS.secondaryPink,
+    fontSize: 14,
+    marginLeft: 10,
+    fontWeight: '600',
+    flex: 1,
+  },
 });
 
 export default SignupScreen;

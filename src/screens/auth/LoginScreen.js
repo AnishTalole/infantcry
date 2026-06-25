@@ -1,12 +1,38 @@
 import React, { useState } from "react";
-import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert, StyleSheet } from "react-native";
+import { SafeAreaView, ScrollView, Text, View, TextInput, TouchableOpacity, Image, Alert, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from "../../components/PrimaryButton";
 import CustomHeader from '../../components/CustomHeader';
 import { styles, COLORS } from "../../theme/styles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "../../api/auth";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
+
+const safeJwtDecode = (token) => {
+  if (!token) return {};
+  try {
+    return jwtDecode(token);
+  } catch (e) {
+    try {
+      return jwtDecode.default ? jwtDecode.default(token) : {};
+    } catch (e2) {
+      try {
+        const parts = token.split('.');
+        if (parts.length < 2) return {};
+        const payload = parts[1];
+        const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+        const decoded = (typeof atob === 'function')
+          ? atob(b64 + pad)
+          : (typeof Buffer !== 'undefined' ? Buffer.from(b64 + pad, 'base64').toString('utf8') : null);
+        if (!decoded) return {};
+        try { return JSON.parse(decodeURIComponent(escape(decoded))); } catch (e3) { return {} }
+      } catch (err) {
+        return {};
+      }
+    }
+  }
+};
 
 const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -38,31 +64,38 @@ const LoginScreen = ({ navigation }) => {
       
       await AsyncStorage.setItem("token", data.token);
 
-      const decodedToken = jwtDecode(data.token);
-      const userId = decodedToken.sub;
+      const decodedToken = safeJwtDecode(data.token);
+      const userId = decodedToken.sub || '';
       await AsyncStorage.setItem("userId", userId);
 
       Alert.alert("Login Successful");
       navigation.navigate("Home");
     } catch (err) {
       console.error("Login error:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      const apiError = err.response?.data?.message || err.response?.data?.error || (typeof err.response?.data === 'string' ? err.response.data : null);
+      setError(apiError || "Login failed. Please try again.");
     }
   };
 
   return (
-    <SafeAreaView style={styles.authContainer}>
-      <CustomHeader title="Login" navigation={navigation} />
-      <ScrollView contentContainerStyle={styles.authScrollContent}>
-        <Text style={styles.authTitle}>Welcome Back</Text>
-        <Text style={styles.authSubtitle}>Sign in to your Baby Translator account.</Text>
+    <KeyboardAvoidingView
+      style={styles.authContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={90}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <SafeAreaView style={styles.authContainer}>
+          <CustomHeader title="Login" navigation={navigation} />
+          <ScrollView contentContainerStyle={styles.authScrollContent} keyboardShouldPersistTaps="handled">
+            <Text style={styles.authTitle}>Welcome Back</Text>
+            <Text style={styles.authSubtitle}>Sign in to your Baby Translator account.</Text>
 
-        <Image
-          source={require('../../../assets/babyimg.png')}
-          style={styles.authImage}
-        />
+            <Image
+              source={require('../../../assets/babyimg.png')}
+              style={styles.authImage}
+            />
 
-        <View style={styles.inputGroup}>
+            <View style={styles.inputGroup}>
           <TextInput
             style={styles.textInput}
             placeholder="Phone Number"
@@ -100,6 +133,8 @@ const LoginScreen = ({ navigation }) => {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+  </TouchableWithoutFeedback>
+</KeyboardAvoidingView>
   );
 };
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://grand-prosperity-production.up.railway.app/api",  // replace with your deployed URL if needed
+  baseURL: "https://infant-cry-production.up.railway.app/api",
   headers: {
     "Content-Type": "application/json",
   },
