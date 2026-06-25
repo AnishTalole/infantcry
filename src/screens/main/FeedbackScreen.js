@@ -43,7 +43,7 @@ const FeedbackScreen = ({ navigation }) => {
         rating: rating,
       };
 
-      const response = await fetch(`https://grand-prosperity-production.up.railway.app/api/feedback/${predictionId}`, {
+      const response = await fetch(`https://infant-cry-production.up.railway.app/api/feedback/${predictionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

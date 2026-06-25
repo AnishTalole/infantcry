@@ -43,7 +43,7 @@ const RemedyScreen = ({ navigation, route }) => {
           return;
         }
 
-        const response = await fetch(`https://grand-prosperity-production.up.railway.app/api/predictions/${predictionId}/remedy`, {
+        const response = await fetch(`https://infant-cry-production.up.railway.app/api/predictions/${predictionId}/remedy`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,

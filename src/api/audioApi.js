@@ -31,7 +31,7 @@ const safeJwtDecode = (token) => {
 import { USE_MOCK } from "./config";
 import * as mockApi from "./mockApi";
 
-const API_URL = "https://grand-prosperity-production.up.railway.app/api/audio";
+const API_URL = "https://infant-cry-production.up.railway.app/api/audio";
 
 /**
  * Upload the recorded audio to the backend for prediction

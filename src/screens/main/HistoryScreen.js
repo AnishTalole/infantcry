@@ -55,7 +55,7 @@ const HistoryScreen = ({ navigation }) => {
           return;
         }
 
-        const response = await fetch(`https://grand-prosperity-production.up.railway.app/api/predictions/history/${userId}`, {
+        const response = await fetch(`https://infant-cry-production.up.railway.app/api/predictions/history/${userId}`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
         });
