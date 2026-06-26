@@ -102,6 +102,18 @@ const HomeScreen = ({ navigation }) => {
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Please grant microphone access to record audio.');
+      } else {
+        // Enable audio recording on iOS
+        try {
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            shouldDuckAndroid: true,
+            playThroughEarpiece: false,
+          });
+        } catch (error) {
+          console.error('Failed to set audio mode:', error);
+        }
       }
     })();
   }, []);
