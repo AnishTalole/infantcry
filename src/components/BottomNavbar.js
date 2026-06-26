@@ -11,9 +11,8 @@ const { width } = Dimensions.get('window');
 
 // Define the navigation items
 const navItems = [
-  { name: 'Home', route: 'Home', icon: 'home-outline' },
-  // Placeholder for center button (Cry Detector/Record) - This will be the main entry point
-  { name: 'Record', route: 'Home', icon: 'microphone', isCenter: true },
+  { name: 'Milestone', route: 'Milestone', icon: 'trophy-outline' },
+  { name: 'Home', route: 'Home', icon: 'home-outline', isCenter: true },
   { name: 'History', route: 'History', icon: 'history' },
 ];
 
@@ -71,7 +70,7 @@ const styles = StyleSheet.create({
   // Assuming these colors are consistent
   navBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
     position: 'absolute',
     bottom: 0,
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
   navItemCenterWrapper: {
     flex: 1,
     alignItems: 'center',
-    marginTop: -20, // Lift center item up
+    marginTop: -22,
   },
   navCenterCircle: {
     width: 60,

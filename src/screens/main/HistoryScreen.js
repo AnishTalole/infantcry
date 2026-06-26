@@ -18,6 +18,24 @@ const CRY_TYPES = {
   "Burping": COLORS.cardGreen,
 };
 
+const parseHistoryDate = (value) => {
+  const date = new Date(value);
+  return isNaN(date) ? null : date;
+};
+
+const formatHistoryDateTime = (date) => {
+  if (!date) return '';
+  return date.toLocaleString(undefined, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+};
+
 // Helper function to check if a date is within a certain period from now
 const isWithinPeriod = (date, period) => {
   const now = new Date();
@@ -42,6 +60,7 @@ const HistoryScreen = ({ navigation }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Week');
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentRoute] = useState('History');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -65,15 +84,23 @@ const HistoryScreen = ({ navigation }) => {
         const data = await response.json();
         const historyData = data[0]?.history || [];
 
-        const processedHistory = historyData.map((item, index) => ({
-          id: item.predictionId || index + 1,
-          reason: item.predictedReason.charAt(0).toUpperCase() + item.predictedReason.slice(1),
-          dateTime: item.dateTime,
-          time: new Date(item.dateTime).toLocaleString(),
-          color: CRY_TYPES[item.predictedReason.charAt(0).toUpperCase() + item.predictedReason.slice(1)] || COLORS.cardYellow,
-          confidence: item.confidenceScore,
-          predictionId: item.predictionId || null,
-        }));
+        const processedHistory = historyData.map((item, index) => {
+          const recordedAt = item.dateTime || item.createdAt || item.created_at || item.timestamp;
+          const parsedDate = parseHistoryDate(recordedAt) || new Date();
+          const reason = item.predictedReason
+            ? item.predictedReason.charAt(0).toUpperCase() + item.predictedReason.slice(1)
+            : 'Unknown';
+
+          return {
+            id: item.predictionId || index + 1,
+            reason,
+            dateTime: parsedDate.toISOString(),
+            time: formatHistoryDateTime(parsedDate),
+            color: CRY_TYPES[reason] || COLORS.cardYellow,
+            confidence: Number(item.confidenceScore ?? item.confidence ?? 0),
+            predictionId: item.predictionId || null,
+          };
+        });
         
         processedHistory.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
         setHistoryItems(processedHistory);
@@ -95,23 +122,23 @@ const HistoryScreen = ({ navigation }) => {
   }, [historyItems, selectedPeriod]);
 
   const chartData = useMemo(() => {
-    if (filteredHistoryItems.length === 0) {
-      return [];
-    }
     const counts = filteredHistoryItems.reduce((acc, item) => {
       acc[item.reason] = (acc[item.reason] || 0) + 1;
       return acc;
     }, {});
     const totalCount = filteredHistoryItems.length;
-    return Object.entries(CRY_TYPES).map(([reason, color]) => {
-      const count = counts[reason] || 0;
-      const percentage = totalCount > 0 ? (count / totalCount) * 100 : 0;
-      return { 
-          label: reason, 
-          percentage: percentage, 
-          iconColor: color 
-      };
-    }).sort((a, b) => b.percentage - a.percentage);
+    return Object.entries(CRY_TYPES)
+      .map(([reason, color]) => {
+        const count = counts[reason] || 0;
+        const percentage = totalCount > 0 ? (count / totalCount) * 100 : 0;
+        return {
+          label: reason,
+          percentage,
+          iconColor: color,
+          count,
+        };
+      })
+      .sort((a, b) => b.percentage - a.percentage || a.label.localeCompare(b.label));
   }, [filteredHistoryItems]);
 
   const HistoryItem = ({ label, time, iconColor, confidence, itemData }) => (
@@ -169,23 +196,27 @@ const HistoryScreen = ({ navigation }) => {
         <Card style={styles.chartCard}>
           <Text style={localStyles.chartTitle}>Cry Distribution ({selectedPeriod})</Text>
           <View style={styles.barChartContainer}>
-            {chartData.filter(item => item.percentage > 0).map((item, index) => (
-              // --- START: MODIFIED BAR STRUCTURE ---
+            {chartData.map((item, index) => (
               <View key={index} style={localStyles.barWrapper}>
-                {/* Section 1: The Bar */}
                 <View style={localStyles.barContainer}>
-                  <View style={[localStyles.barInner, { height: `${item.percentage}%`, backgroundColor: item.iconColor }]} />
+                  <View
+                    style={[
+                      localStyles.barInner,
+                      {
+                        height: `${item.percentage}%`,
+                        backgroundColor: item.iconColor,
+                        minHeight: item.percentage === 0 ? 4 : undefined,
+                      },
+                    ]}
+                  />
                 </View>
-                {/* Section 2: The Labels */}
                 <View style={localStyles.labelContainer}>
                   <Text style={localStyles.barPercentageLabel}>{item.percentage.toFixed(0)}%</Text>
                   <Text style={[localStyles.reasonLabel, { color: item.iconColor }]}>{item.label}</Text>
                   <FallbackImage source={{ uri: PLACEHOLDER_ICON(item.iconColor) }} style={localStyles.barIcon} />
                 </View>
               </View>
-              // --- END: MODIFIED BAR STRUCTURE ---
             ))}
-            {chartData.length === 0 && <Text style={localStyles.noDataText}>No data for this period</Text>}
           </View>
         </Card>
 
@@ -204,7 +235,7 @@ const HistoryScreen = ({ navigation }) => {
           ))}
         </View>
       </ScrollView>
-      <BottomNavbar navigation={navigation} />
+      <BottomNavbar navigation={navigation} currentRoute={currentRoute} />
     </SafeAreaView>
   );
 };

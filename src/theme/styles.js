@@ -34,6 +34,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    paddingTop: 15,
   },
   scrollContent: {
     paddingHorizontal: 20,

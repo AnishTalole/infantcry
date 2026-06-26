@@ -6,6 +6,33 @@ import CustomHeader from '../../components/CustomHeader';
 import { styles, PLACEHOLDER_AVATAR, COLORS } from '../../theme/styles';
 import { signup } from "../../api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import jwtDecode from "jwt-decode";
+
+const safeJwtDecode = (token) => {
+  if (!token) return {};
+  try {
+    return jwtDecode(token);
+  } catch (e) {
+    try {
+      return jwtDecode.default ? jwtDecode.default(token) : {};
+    } catch (e2) {
+      try {
+        const parts = token.split('.');
+        if (parts.length < 2) return {};
+        const payload = parts[1];
+        const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+        const decoded = (typeof atob === 'function')
+          ? atob(b64 + pad)
+          : (typeof Buffer !== 'undefined' ? Buffer.from(b64 + pad, 'base64').toString('utf8') : null);
+        if (!decoded) return {};
+        try { return JSON.parse(decodeURIComponent(escape(decoded))); } catch (e3) { return {} }
+      } catch (err) {
+        return {};
+      }
+    }
+  }
+};
 
 const SignupScreen = ({ navigation }) => {
   const [parentName, setParentName] = useState('');
@@ -92,6 +119,11 @@ const SignupScreen = ({ navigation }) => {
       const data = await signup(payload);
 
       await AsyncStorage.setItem("token", data.token);
+      const decodedToken = safeJwtDecode(data.token);
+      const userId = decodedToken.sub || decodedToken.userId || decodedToken.id || '';
+      if (userId) {
+        await AsyncStorage.setItem("userId", userId);
+      }
 
       alert("Signup successful!");
       navigation.navigate("Home");

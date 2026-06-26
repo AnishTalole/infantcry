@@ -3,25 +3,35 @@ import { SafeAreaView, ScrollView, Text, View, StyleSheet, ActivityIndicator, Al
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomHeader from '../../components/CustomHeader';
 import Card from '../../components/Card';
+import { Ionicons } from '@expo/vector-icons';
 import { styles, COLORS } from '../../theme/styles';
 
 // Helper component for each remedy
 const RemedyDetailCard = ({ label, confidence, immediate, preventive, comfortTip, color }) => (
-  <Card style={localRemedyStyles.remedyCard}>
+  <Card style={[localRemedyStyles.remedyCard, { borderLeftColor: color || COLORS.primaryOrange }] }>
     <View style={localRemedyStyles.headerRow}>
-      <Text style={[localRemedyStyles.remedyTitle, { color: color || COLORS.primaryOrange }]}>{label}</Text>
-      <Text style={localRemedyStyles.confidenceText}>{confidence}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Ionicons name="medkit-outline" size={22} color={color || COLORS.primaryOrange} style={{ marginRight: 10 }} />
+        <Text style={[localRemedyStyles.remedyTitle, { color: color || COLORS.primaryOrange }]}>{label}</Text>
+      </View>
+
+      <View style={[localRemedyStyles.confidenceBadge, { backgroundColor: (color || COLORS.primaryOrange) + '20' }]}>
+        <Text style={[localRemedyStyles.confidenceBadgeText, { color: color || COLORS.primaryOrange }]}>{confidence}</Text>
+      </View>
     </View>
 
-    <RemedySection title="Immediate Action" text={immediate} color={COLORS.secondaryPink} />
-    <RemedySection title="Preventive Measure" text={preventive} color={COLORS.cardGreen} />
-    <RemedySection title="Comfort Tip" text={comfortTip} color={COLORS.cardPurple} />
+    <RemedySection title="Immediate Action" text={immediate} color={COLORS.secondaryPink} icon="flash-outline" />
+    <RemedySection title="Preventive Measure" text={preventive} color={COLORS.cardGreen} icon="shield-checkmark-outline" />
+    <RemedySection title="Comfort Tip" text={comfortTip} color={COLORS.cardPurple} icon="heart-outline" />
   </Card>
 );
 
-const RemedySection = ({ title, text, color }) => (
-  <View style={localRemedyStyles.sectionContainer}>
-    <Text style={[localRemedyStyles.sectionTitle, { color }]}>{title}</Text>
+const RemedySection = ({ title, text, color, icon }) => (
+  <View style={[localRemedyStyles.sectionContainer, { borderColor: color + '20' }]}> 
+    <View style={localRemedyStyles.sectionHeader}> 
+      <Ionicons name={icon || 'information-circle-outline'} size={18} color={color} style={{ marginRight: 8 }} />
+      <Text style={[localRemedyStyles.sectionTitle, { color }]}>{title}</Text>
+    </View>
     <Text style={localRemedyStyles.sectionText}>{text}</Text>
   </View>
 );
@@ -100,7 +110,7 @@ const RemedyScreen = ({ navigation, route }) => {
       <ScrollView contentContainerStyle={localRemedyStyles.scrollContent}>
         <Text style={styles.sectionHeader}>Top Cry Analysis</Text>
         <Text style={localRemedyStyles.introText}>
-          The initial cry was analyzed as **{primaryLabel}**. Here are the detailed remedies.
+          The initial cry was analyzed as <Text style={localRemedyStyles.highlight}>{primaryLabel}</Text>. Here are the detailed remedies.
         </Text>
 
         {isLoading ? (
@@ -126,12 +136,16 @@ const RemedyScreen = ({ navigation, route }) => {
 const localRemedyStyles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 20, paddingBottom: 90 },
   introText: { fontSize: 16, color: COLORS.textGray, marginBottom: 20, paddingHorizontal: 5 },
-  remedyCard: { padding: 20, marginBottom: 20, borderLeftWidth: 5, borderLeftColor: COLORS.secondaryPink },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-  remedyTitle: { fontSize: 22, fontWeight: '800' },
-  confidenceText: { fontSize: 18, fontWeight: '700', color: COLORS.textGray },
-  sectionContainer: { marginBottom: 15 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 5 },
+  highlight: { fontWeight: '800', color: COLORS.primaryOrange },
+  remedyCard: { padding: 18, marginBottom: 18, borderLeftWidth: 6, borderRadius: 12, backgroundColor: COLORS.white, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 3 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  remedyTitle: { fontSize: 20, fontWeight: '800' },
+  confidenceText: { fontSize: 14, fontWeight: '700', color: COLORS.textGray },
+  confidenceBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+  confidenceBadgeText: { fontSize: 13, fontWeight: '700' },
+  sectionContainer: { marginBottom: 14, padding: 12, borderRadius: 10, borderWidth: 1, backgroundColor: '#FAFAFB' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  sectionTitle: { fontSize: 15, fontWeight: '700' },
   sectionText: { fontSize: 14, color: COLORS.textDark, lineHeight: 20 },
 });
 
